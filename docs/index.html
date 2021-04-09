@@ -26,7 +26,7 @@ table, tr, td {
   padding: 12px;
 }
 </style>
-<title>CS 184 Rasterizer</title>
+<title>CS 184 Final Project Proposal</title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
 <link rel="preconnect" href="https://fonts.gstatic.com">
@@ -45,29 +45,37 @@ table, tr, td {
 <div style="background-color: #ffffffeb; padding:40px; border-radius: 25px;">
 
 <h2 align="middle">Summary</h2>
-<p>In this project, we have implemented a program that allows us render SVG files through the rasterization of triangles, as well as performing PNG texture mapping on them. For triangle rasterization, we progressed from simple point-in-line tests to utilizing barycentric coordinates/interpolation. We also implement various pixel and level sampling methods for texture mapping. Overall, this project demonstrated that with relatively small adjustments and utilizing different algorithms, we can achieve much better results when rendering-- although the mistakes in rendering made along the way are at times more interesting!</p>
+<p>In this project, we will create an audio visualizer using fire simulations that react to changes in features in music like frequency, tempo, and key. We will represent a set of frequency bands as a set of fires, and each fire will change in color, amplitude, or smokiness in real time according to the aforementioned music feature changes. Our final product will be a video that shows the fire simulations corresponding to a few different songs.
+</p>
 
 
 <h2 align="middle">Problem Description:</h2>
-<p></p>
+<p>Fire simulations on their own are very dynamic and visually exciting, but we wanted to find a way to showcase how fires react in real time to different physical changes. We realized that using the dynamic properties of music could be a great way to modulate these physical changes in a fire simulation, as music pieces can range from slow and somber, like a dying fire, to loud and high-tempo, like a fire with gasoline poured on it. By tying the size and other physical parameters of our fire simulation to music, we can show the full range of “emotion” of our fires.
+  <br><br>
+This project will give us important information on how fire simulations perform in a challenging, real-time environment. The hardware we will be using isn’t particularly high end, unlike the hardware used for simulation research at Nvidia or a Berkeley lab, so the code we create could have some unique optimizations for laptops and mid-grade GPUs. Further, our final demo will visualize fire simulations and time-frequency analysis in an exciting and instructional way.
+<br><br>
+The major challenge in this project is the real time rendering of multiple fires. Rendering a single fire is fairly complex, and it will take some optimization to get multiple fires running at the same time and have them modulate parameters according to the music. It will also be hard to have the fires sync up to the music properly, as we will have to render the fires at the same speed as the music plays, and we will have to make sure physical changes to the fire are quick enough to match the changes in the music.
+<br><br>
+We will first implement a single fire simulation that we can modulate with some parameters. Once this is running, we will implement a time-frequency analysis of a music sample to get parameters to modulate our fire. Finally, we will create a line of our controllable fires, each fire corresponding to a different frequency band. As a final demo, we will see how our fire simulation reacts to a few snippets of songs that we input. Our project will be coded in OpenGL and C++.
+</p>
 
 <h2 align="middle">Goals & Deliverables:</h2>
 
 <h3 align="middle">Planned Delivery:</h3>
 
-<p>We check every sample in the bounding box (determined based on the minimums and maximums of the vertex coordinates) and color it if necessary. We used the line equation, which we plugged in each point we examine to see if the equation returns a positive or negative value. If the point returns all positive values for all three lines or all negative values, then we color it. We consider both the case of all negative and all positive to cover both counterclockwise and clockwise orientation of the points.</p>
-
-<center><img src="./images/task1.png" align="middle" width="400px"/></center>
-
-<h3 align="middle">Planned Delivery:</h3>
-
-<p>We check every sample in the bounding box (determined based on the minimums and maximums of the vertex coordinates) and color it if necessary. We used the line equation, which we plugged in each point we examine to see if the equation returns a positive or negative value. If the point returns all positive values for all three lines or all negative values, then we color it. We consider both the case of all negative and all positive to cover both counterclockwise and clockwise orientation of the points.</p>
-
-<br>
+<p>
+  We will implement a music visualizer composed of a row of fire flames, which will increase or decrease in height (following a wave-like form). The fires will react to a given music input, changing in color and amplitude based on Fourier analysis of an audio clip and its valence values. We may need to create segments of flames in order to independently customize their amplitude and color according to the audio analysis.In order to measure the quality and performance of our system, we will be analyzing our program’s FPS values. We will also compare our system’s output waveforms for a particular song to waveforms produced by other online audio visualizers. Some questions we would like to answer are (1) how is fire realistically rendered? (2) how can we manipulate fire to react to outside variables (e.g. audio)? (3) How does our fire simulation react to changes in music volume, tempo, and key? (4) How do we render our fire simulation efficiently?
+</p>
 
 <h3 align="middle">Aspirational Delivery:</h3>
 
-<p>We check every sample in the bounding box (determined based on the minimums and maximums of the vertex coordinates) and color it if necessary. We used the line equation, which we plugged in each point we examine to see if the equation returns a positive or negative value. If the point returns all positive values for all three lines or all negative values, then we color it. We consider both the case of all negative and all positive to cover both counterclockwise and clockwise orientation of the points.</p>
+<p>In the case that we have additional time and are ahead of schedule, we aspire to enhance the user experience. Specifically, we can add more user features such as toggling between different color palettes or parameters such as audio sensitivity, which could affect the amplitude and color range based on the fire’s sensitivity to the audio clip. Additionally, we hope to add audio customization where the users will be able to input their own selected audio clip and integrate the Spotify API in order to perform a more in depth analysis of the audio, which can be utilized to change the color, height, and smokiness of the fire. Some of the interesting features returned from the Tracks API include danceability, key, energy, and liveliness. An example of how this could be used is a cool-toned color palette and increased smokiness associated with a song with low energy and a minor key. Finally, we could render a disco ball at the top of the frame to enhance the listening experience.</p>
+<br>
+
+<center><img src="./images/mockup.png" align="middle" width="800px"/></center>
+
+<h2 align="middle">Schedule:</h2>
+
 
 </body>
 </html>
