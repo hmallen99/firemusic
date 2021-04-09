@@ -1,0 +1,73 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<style>
+  body {
+    background: url('./images/bg.jpg')
+    repeat fixed;
+    background-size:cover;
+    overflow:scroll;
+    padding: 100px;
+    width: 1400px;
+    margin: auto;
+    text-align: left;
+    font-weight: 300;
+    font-family: 'Raleway', sans-serif;
+    color: #121212;
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Raleway', sans-serif;
+  }
+  .results {
+  border: 1px solid black;
+  border-collapse: collapse;
+}
+table, tr, td {
+  padding: 12px;
+}
+</style>
+<title>CS 184 Rasterizer</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com">
+<link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+
+<body>
+
+<h1 align="middle" style="color:white;">CS 184: Computer Graphics and Imaging, Spring 2021</h1>
+<h1 align="middle" style="color:white;">Final Project Proposal: Music-reactive Real-time Fire Simulation</h1>
+<h2 align="middle" style="color:white;">Henry Allen, Priyanka Kargupta, Hannah Ku, Amber Xie</h2>
+
+<br><br>
+
+<div style="background-color: #ffffffeb; padding:40px; border-radius: 25px;">
+
+<h2 align="middle">Summary</h2>
+<p>In this project, we have implemented a program that allows us render SVG files through the rasterization of triangles, as well as performing PNG texture mapping on them. For triangle rasterization, we progressed from simple point-in-line tests to utilizing barycentric coordinates/interpolation. We also implement various pixel and level sampling methods for texture mapping. Overall, this project demonstrated that with relatively small adjustments and utilizing different algorithms, we can achieve much better results when rendering-- although the mistakes in rendering made along the way are at times more interesting!</p>
+
+
+<h2 align="middle">Problem Description:</h2>
+<p></p>
+
+<h2 align="middle">Goals & Deliverables:</h2>
+
+<h3 align="middle">Planned Delivery:</h3>
+
+<p>We check every sample in the bounding box (determined based on the minimums and maximums of the vertex coordinates) and color it if necessary. We used the line equation, which we plugged in each point we examine to see if the equation returns a positive or negative value. If the point returns all positive values for all three lines or all negative values, then we color it. We consider both the case of all negative and all positive to cover both counterclockwise and clockwise orientation of the points.</p>
+
+<center><img src="./images/task1.png" align="middle" width="400px"/></center>
+
+<h3 align="middle">Planned Delivery:</h3>
+
+<p>We check every sample in the bounding box (determined based on the minimums and maximums of the vertex coordinates) and color it if necessary. We used the line equation, which we plugged in each point we examine to see if the equation returns a positive or negative value. If the point returns all positive values for all three lines or all negative values, then we color it. We consider both the case of all negative and all positive to cover both counterclockwise and clockwise orientation of the points.</p>
+
+<br>
+
+<h3 align="middle">Aspirational Delivery:</h3>
+
+<p>We check every sample in the bounding box (determined based on the minimums and maximums of the vertex coordinates) and color it if necessary. We used the line equation, which we plugged in each point we examine to see if the equation returns a positive or negative value. If the point returns all positive values for all three lines or all negative values, then we color it. We consider both the case of all negative and all positive to cover both counterclockwise and clockwise orientation of the points.</p>
+
+</body>
+</html>
