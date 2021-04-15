@@ -38,7 +38,7 @@ scene.add( fire.mesh );
 fire.mesh.position.set( 0, fireHeight / 2, 0 );
 
 
-( function animate () {
+function animate () {
 
   requestAnimationFrame( animate );
 
@@ -55,4 +55,6 @@ fire.mesh.position.set( 0, fireHeight / 2, 0 );
 
   renderer.render( scene, camera );
 
-} )();
+}
+
+animate();
