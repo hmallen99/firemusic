@@ -19,23 +19,12 @@
 
             vec2 uv = gl_FragCoord.xy / vec2(1024.0, 1024.0);
         
-            vec4 textureValue = texture2D(map, uv);
-            gl_FragColor = textureValue;
-        }
-    </script>
-    <script id="textureShader", type="x-shader/x-fragment">
-        uniform sampler2D textureSampler;
-
-        void main() {
-
-            vec2 uv = gl_FragCoord.xy / vec2(512.0, 512.0);
-
-            vec4 textureValue = texture2D(textureSampler, uv);
+            vec4 textureValue = abs(texture2D(map, uv));
             gl_FragColor = textureValue;
         }
     </script>
     <script id="advectShader", type="x-shader/x-fragment">
-        uniform sampler2D velocitySampler;
+        //uniform sampler2D velocitySampler;
         uniform float timestep;
 
         void main() {
@@ -55,7 +44,7 @@
         }
     </script>
     <script id="divergenceShader", type="x-shader/x-fragment">
-        uniform sampler2D velocitySampler;
+        //uniform sampler2D velocitySampler;
 
         void main() {
             vec2 invRes = vec2(1.0, 1.0) / vec2(512.0, 512.0);
@@ -67,14 +56,14 @@
             float y1 = texture2D(velocitySampler, uv - vec2(0, invRes.y)).y;
 
             float divergence = ((x1 - x0) + (y1 - y0)) * 0.5;
-            gl_FragColor = vec4(divergence);
+            gl_FragColor = vec4(divergence, divergence, divergence, 1.0);
         }
     </script>
 
     <script id="jacobiShader", type="x-shader/x-fragment">
-        uniform sampler2D velocitySampler;
-        uniform sampler2D pressureSampler;
-        uniform sampler2D divergenceSampler;
+        //uniform sampler2D velocitySampler;
+        //uniform sampler2D pressureSampler;
+        //uniform sampler2D divergenceSampler;
 
         float samplePressure(vec2 pos) {
             if (pos.x > 1.0 || pos.y > 1.0 || pos.x < 0.0 || pos.y < 0.0) {
@@ -113,10 +102,9 @@
             float y1 = texture2D(pressureSampler, uv - vec2(0, invRes.y)).x;
 
             vec2 pressureGradient = (vec2(x1, y1) - vec2(x0, y0)) * 0.5;
-            vec2 oldV = texture(velocitySampler, uv).xy;
+            vec2 oldV = texture(velocitySampler, vec2(uv.x, uv.y)).xy;
             gl_FragColor = vec4(oldV - pressureGradient, 0.0, 1.0);
         }
-    
     </script>
 	<script src="./fluid_main.js"  type="module"></script>
 
