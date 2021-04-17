@@ -7,9 +7,44 @@
 </head>
 
 <body>
+    <script id="vertexShader", type="x-shader/x-vertex">
+        void main() {
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+    </script>
+    <script id="fragmentShader", type="x-shader/x-fragment">
+        uniform sampler2D map;
+        
+        void main() {
 
-	<script src="./fluid_main.js"  type="module">
-	</script>
+            vec2 uv = gl_FragCoord.xy / vec2(1024.0, 1024.0);
+        
+            vec4 textureValue = texture2D(map, uv);
+            gl_FragColor = textureValue;
+        }
+    </script>
+    <script id="textureShader", type="x-shader/x-fragment">
+        uniform sampler2D textureSampler;
+
+        void main() {
+
+            vec2 uv = gl_FragCoord.xy / vec2(512.0, 512.0);
+
+            vec4 textureValue = texture2D(textureSampler, uv);
+            gl_FragColor = textureValue;
+        }
+    </script>
+    <script id="advectShader", type="x-shader/x-fragment">
+        uniform sampler2D velocitySampler;
+
+        void main() {
+            vec2 uv = gl.FragCoord.xy / vec2(512.0, 512.0);
+
+            vec4 textureValue = texture2D(velocitySampler, uv);
+            gl_FragColor = textureValue;
+        }
+    </script>
+	<script src="./fluid_main.js"  type="module"></script>
 
 </body>
 </html>

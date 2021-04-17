@@ -5,9 +5,7 @@ import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.118/examples
 import { NRRDLoader } from 'https://cdn.jsdelivr.net/npm/three@0.118/examples/jsm/loaders/NRRDLoader.js';
 import { VolumeRenderShader1 } from 'https://cdn.jsdelivr.net/npm/three@0.118/examples/jsm/shaders/VolumeShader.js';
 import { WEBGL } from 'https://cdn.jsdelivr.net/npm/three@0.118/examples/jsm/WebGL.js';
-import { EffectComposer } from 'https://cdn.jsdelivr.net/npm/three@0.118/examples/jsm/postprocessing/EffectComposer.js';
-import { RenderPass } from 'https://cdn.jsdelivr.net/npm/three@0.118/examples/jsm/postprocessing/RenderPass.js';
-import { ShaderPass } from 'https://cdn.jsdelivr.net/npm/three@0.118/examples/jsm/postprocessing/ShaderPass.js';
+import { GPUComputationRenderer } from 'https://cdn.jsdelivr.net/npm/three@0.118/examples/jsm/misc/GPUComputationRenderer.js';
 
 if ( WEBGL.isWebGL2Available() === false ) {
 
@@ -15,140 +13,151 @@ if ( WEBGL.isWebGL2Available() === false ) {
 
 }
 
+const WIDTH = 512;
+
 let renderer,
     scene,
     camera,
-    controls,
     material,
     volconfig,
     cmtextures,
     object,
-    composer;
+    container,
+    fireMesh,
+    textureShader,
+    textureMapVariable,
+    outputRenderTarget,
+    velocityMap0,
+    gpuCompute;
 
 init();
+animate();
 
 function init() {
 
+    container = document.createElement( 'div' );
+    document.body.appendChild(container);
+
+    camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 3000);
+    camera.position.set(0, 0, 1);
+    camera.lookAt(0, 0, 0);
+
     scene = new THREE.Scene();
 
-    // Create renderer
+    // Probably don't need this
+    const sun = new THREE.DirectionalLight(0xFFFFFF, 1.0);
+    sun.position.set(300, 400, 175);
+    scene.add(sun)
+
     renderer = new THREE.WebGLRenderer();
-    renderer.setPixelRatio( window.devicePixelRatio );
-    renderer.setSize( window.innerWidth, window.innerHeight );
-    document.body.appendChild( renderer.domElement );
-
-    // Create camera (The volume renderer does not work very well with perspective yet)
-    const h = 512; // frustum height
-    const aspect = window.innerWidth / window.innerHeight;
-    camera = new THREE.OrthographicCamera( - h * aspect / 2, h * aspect / 2, h / 2, - h / 2, 1, 1000 );
-    camera.position.set( 0, 0, 128 );
-    camera.up.set( 0, 0, 1 ); // In our data, z is up
-
-    // Create controls
-    controls = new OrbitControls( camera, renderer.domElement );
-    controls.addEventListener( 'change', render );
-    controls.target.set( 64, 64, 128 );
-    controls.minZoom = 0.5;
-    controls.maxZoom = 4;
-    controls.update();
-
-    // scene.add( new AxesHelper( 128 ) );
-
-    // Lighting is baked into the shader a.t.m.
-    // let dirLight = new DirectionalLight( 0xffffff );
-
-    // The gui for interaction
-    volconfig = { clim1: 0, clim2: 1, renderstyle: 'iso', isothreshold: 0.15, colormap: 'viridis' };
-    const gui = new GUI();
-    gui.add( volconfig, 'clim1', 0, 1, 0.01 ).onChange( updateUniforms );
-    gui.add( volconfig, 'clim2', 0, 1, 0.01 ).onChange( updateUniforms );
-    gui.add( volconfig, 'colormap', { gray: 'gray', viridis: 'viridis' } ).onChange( updateUniforms );
-    gui.add( volconfig, 'renderstyle', { mip: 'mip', iso: 'iso' } ).onChange( updateUniforms );
-    gui.add( volconfig, 'isothreshold', 0, 1, 0.01 ).onChange( updateUniforms );
-
-    // Load the data ...
-    new NRRDLoader().load( "models/nrrd/stent.nrrd", function ( volume ) {
-
-        // Texture to hold the volume. We have scalars, so we put our data in the red channel.
-        // THREEJS will select R32F (33326) based on the THREE.RedFormat and THREE.FloatType.
-        // Also see https://www.khronos.org/registry/webgl/specs/latest/2.0/#TEXTURE_TYPES_FORMATS_FROM_DOM_ELEMENTS_TABLE
-        // TODO: look the dtype up in the volume metadata
-        const texture = new THREE.DataTexture3D( volume.data, volume.xLength, volume.yLength, volume.zLength );
-        texture.format = THREE.RedFormat;
-        texture.type = THREE.FloatType;
-        texture.minFilter = texture.magFilter = THREE.LinearFilter;
-        texture.unpackAlignment = 1;
-
-        // Colormap textures
-        cmtextures = {
-            viridis: new THREE.TextureLoader().load( 'textures/cm_viridis.png', render ),
-            gray: new THREE.TextureLoader().load( 'textures/cm_gray.png', render )
-        };
-
-        // Material
-        const shader = VolumeRenderShader1;
-
-        const uniforms = THREE.UniformsUtils.clone( shader.uniforms );
-
-        uniforms[ "u_data" ].value = texture;
-        uniforms[ "u_size" ].value.set( volume.xLength, volume.yLength, volume.zLength );
-        uniforms[ "u_clim" ].value.set( volconfig.clim1, volconfig.clim2 );
-        uniforms[ "u_renderstyle" ].value = volconfig.renderstyle == 'mip' ? 0 : 1; // 0: MIP, 1: ISO
-        uniforms[ "u_renderthreshold" ].value = volconfig.isothreshold; // For ISO renderstyle
-        uniforms[ "u_cmdata" ].value = cmtextures[ volconfig.colormap ];
-
-        material = new THREE.ShaderMaterial( {
-            uniforms: uniforms,
-            vertexShader: shader.vertexShader,
-            fragmentShader: shader.fragmentShader,
-            side: THREE.BackSide // The volume shader uses the backface as its "reference point"
-        } );
-
-        // THREE.Mesh
-        const geometry = new THREE.BoxGeometry( volume.xLength, volume.yLength, volume.zLength );
-        geometry.translate( volume.xLength / 2 - 0.5, volume.yLength / 2 - 0.5, volume.zLength / 2 - 0.5 );
-
-        const mesh = new THREE.Mesh( geometry, material );
-        scene.add( mesh );
-
-        
-
-    } );
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    container.appendChild(renderer.domElement);
 
     window.addEventListener( 'resize', onWindowResize );
 
+    init_fire();
 }
 
-function updateUniforms() {
+function init_fire() {
+    const geometry = new THREE.PlaneGeometry(WIDTH, WIDTH, WIDTH, WIDTH);
+    const material = new THREE.ShaderMaterial({
+        uniforms: THREE.UniformsUtils.merge( [
+            THREE.ShaderLib['phong'].uniforms, 
+            {
+                map: {value: null},
+            }
+        ]),
+        vertexShader: document.getElementById('vertexShader').textContent,
+        fragmentShader: document.getElementById('fragmentShader').textContent
+    });
 
-    material.uniforms[ "u_clim" ].value.set( volconfig.clim1, volconfig.clim2 );
-    material.uniforms[ "u_renderstyle" ].value = volconfig.renderstyle == 'mip' ? 0 : 1; // 0: MIP, 1: ISO
-    material.uniforms[ "u_renderthreshold" ].value = volconfig.isothreshold; // For ISO renderstyle
-    material.uniforms[ "u_cmdata" ].value = cmtextures[ volconfig.colormap ];
+    fireMesh = new THREE.Mesh(geometry, material);
+    scene.add(fireMesh);
 
-    render();
+    // create a 2d texture that encodes 3d data, e.g. the texture below is a 3 x 2 x 6 cube
+    /*
+    1 1 1 2 2 2
+    1 1 1 2 2 2
+    3 3 3 4 4 4
+    3 3 3 4 4 4
+    5 5 5 6 6 6
+    5 5 5 6 6 6
+    */
+    // Texture size: 512 x 512 = 8 x 8 x 64 x 64 = 64 x 64 x 64
+    // sample 2d texture like it is 3d 
+    //const velocityMap0 = gpuCompute.createTexture();
+    //const pressureMap0 = gpuCompute.createTexture();
+    //const divergenceMap0 = gpuCompute.createTexture();
+
+    gpuCompute = new GPUComputationRenderer(WIDTH, WIDTH, renderer);
+    const texture0 = gpuCompute.createTexture();
+
+    
+    
+    /*var p = 0;
+    for (var j = 0; j < 8; j++) {
+        for (var i = 0; i < 8; i++) {
+            for (var y = 0; y < 64; y++) {
+                for (var x = 0; x < 64; x++) {
+                    p = (j * 64 + y) * 512 + (i * 64 + x);
+                    p *= 4;
+                    pixels[p] = (8 - i) / 8;
+                    pixels[p + 1] = (8 - j) / 8;
+                    pixels[p + 2] = 0.0;
+                    pixels[p + 3] = 1.0;
+                    //p += 4;
+                }
+            }
+        }
+    }*/
+
+    
+    velocityMap0 = gpuCompute.createTexture();
+    const pixels = velocityMap0.image.data;
+    var p = 0;
+    for (var i = 0; i < WIDTH; i++) {
+        for (var j = 0; j < WIDTH; j++) {
+            pixels[p] = i / WIDTH;
+            pixels[p + 1] = j / WIDTH;
+            pixels[p + 2] = 0.0;
+            pixels[p + 3] = 1.0;
+            p += 4;
+        }
+    }
+
+    textureShader = gpuCompute.createShaderMaterial(document.getElementById('textureShader').textContent, {
+        textureSampler: {value: null},
+    });
+    outputRenderTarget = gpuCompute.createRenderTarget();
+    
+    textureShader.uniforms.textureSampler.value = velocityMap0;
+    
+    material.uniforms.map.value = outputRenderTarget.texture;
+
+    gpuCompute.doRenderTarget(textureShader, outputRenderTarget);
+
+    
 
 }
 
 function onWindowResize() {
-
-    renderer.setSize( window.innerWidth, window.innerHeight );
-
-    const aspect = window.innerWidth / window.innerHeight;
-
-    const frustumHeight = camera.top - camera.bottom;
-
-    camera.left = - frustumHeight * aspect / 2;
-    camera.right = frustumHeight * aspect / 2;
-
+    camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
 
+    renderer.setSize( window.innerWidth, window.innerHeight );
+}
+
+function animate() {
+    requestAnimationFrame(animate);
+
     render();
-
 }
 
-function render() {
+function render () {
+    
 
-    renderer.render( scene, camera );
-
+    gpuCompute.compute();
+    renderer.render(scene, camera);
 }
+
