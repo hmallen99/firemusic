@@ -143,13 +143,16 @@ function init_fire() {
 
 
     divergenceVariable = gpuCompute.addVariable("divergenceSampler", document.getElementById("divergenceShader").textContent, divergenceMap);
-    gpuCompute.setVariableDependencies(divergenceVariable, [divergenceVariable, advectVariable]);
+    gpuCompute.setVariableDependencies(divergenceVariable, [divergenceVariable]);
     divergenceUniforms = divergenceVariable.material.uniforms;
+    divergenceUniforms["velocitySampler"] = {value: null};
 
 
     jacobiVariable = gpuCompute.addVariable("pressureSampler", document.getElementById("jacobiShader").textContent, pressureMap);
-    gpuCompute.setVariableDependencies(jacobiVariable, [jacobiVariable, divergenceVariable, advectVariable]);
+    gpuCompute.setVariableDependencies(jacobiVariable, [jacobiVariable]);
     jacobiUniforms = jacobiVariable.material.uniforms;
+    jacobiUniforms["velocitySampler"] = {value: null};
+    jacobiUniforms["divergenceSampler"] = {value: null};
 
 
 
@@ -216,7 +219,7 @@ function update() {
     
     //advectUniforms['velocitySampler'].value = advectTexture; 
     
-    //divergenceUniforms["velocitySampler"].value = advectAltTexture;
+    
     let divergenceTexture = gpuCompute.getCurrentRenderTarget(divergenceVariable).texture;
 
     //let divergenceAltTexture = gpuCompute.getAlternateRenderTarget(divergenceVariable).texture;
@@ -230,8 +233,13 @@ function update() {
 
     
     
-    //material.uniforms.map.value = gpuCompute.getCurrentRenderTarget(jacobiVariable).texture;
-    //alternateMaterial.uniforms.map.value = gpuCompute.getAlternateRenderTarget(jacobiVariable).texture;
+    
+    divergenceUniforms["velocitySampler"].value = gpuCompute.getAlternateRenderTarget(advectVariable).texture;
+    jacobiUniforms["velocitySampler"].value = gpuCompute.getAlternateRenderTarget(advectVariable).texture;
+    jacobiUniforms["divergenceSampler"].value = gpuCompute.getAlternateRenderTarget(divergenceVariable).texture;
+
+    //material.uniforms.map.value = gpuCompute.getCurrentRenderTarget(divergenceVariable).texture;
+    //alternateMaterial.uniforms.map.value = gpuCompute.getAlternateRenderTarget(divergenceVariable).texture;
     gpuCompute.compute();
     //divergenceUpdate();
     //jacobiIteration();
