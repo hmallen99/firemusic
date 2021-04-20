@@ -29,14 +29,18 @@ let renderer,
     divergenceUniforms,
     jacobiVariable,
     jacobiUniforms,
-    outputTexture,
+    windowSize,
     outputShader,
+    outputVariable,
+    outputUniforms,
     gpuCompute;
 
 init();
 animate();
 
 function init() {
+
+    windowSize = new THREE.Vector2(window.innerWidth, window.innerHeight);
 
     container = document.createElement( 'div' );
     document.body.appendChild(container);
@@ -94,15 +98,15 @@ function create_3d_tex() {
 }
 
 function init_fire() {
-    const geometry = new THREE.PlaneGeometry(WIDTH, WIDTH, WIDTH, WIDTH);
+    const geometry = new THREE.PlaneGeometry(WIDTH, WIDTH);
     material = new THREE.ShaderMaterial({
         uniforms: THREE.UniformsUtils.merge( [
             THREE.ShaderLib['phong'].uniforms, 
             {
-                map: {value: null},
+                textureMap: {value: null},
             }
         ]),
-        vertexShader: document.getElementById('vertexShader').textContent,
+        vertexShader: THREE.ShaderLib["phong"].vertexShader,
         fragmentShader: document.getElementById('fragmentShader').textContent
     });
 
@@ -110,10 +114,10 @@ function init_fire() {
         uniforms: THREE.UniformsUtils.merge( [
             THREE.ShaderLib['phong'].uniforms, 
             {
-                map: {value: null},
+                textureMap: {value: null},
             }
         ]),
-        vertexShader: document.getElementById('vertexShader').textContent,
+        vertexShader: THREE.ShaderLib["phong"].vertexShader,
         fragmentShader: document.getElementById('fragmentShader').textContent
     });
 
@@ -137,34 +141,38 @@ function init_fire() {
     
 
     advectVariable = gpuCompute.addVariable("velocitySampler", document.getElementById("advectShader").textContent, velocityMap);
-    gpuCompute.setVariableDependencies(advectVariable, [advectVariable]);
     advectUniforms = advectVariable.material.uniforms;
-    advectUniforms['timestep'] = {value: 0.01};
+    advectUniforms['timestep'] = {value: 0.03};
+    gpuCompute.addResolutionDefine(advectVariable.material);
 
 
     divergenceVariable = gpuCompute.addVariable("divergenceSampler", document.getElementById("divergenceShader").textContent, divergenceMap);
     gpuCompute.setVariableDependencies(divergenceVariable, [divergenceVariable]);
     divergenceUniforms = divergenceVariable.material.uniforms;
     divergenceUniforms["velocitySampler"] = {value: null};
-
+    gpuCompute.addResolutionDefine(divergenceVariable.material);
 
     jacobiVariable = gpuCompute.addVariable("pressureSampler", document.getElementById("jacobiShader").textContent, pressureMap);
     gpuCompute.setVariableDependencies(jacobiVariable, [jacobiVariable]);
     jacobiUniforms = jacobiVariable.material.uniforms;
     jacobiUniforms["velocitySampler"] = {value: null};
     jacobiUniforms["divergenceSampler"] = {value: null};
+    gpuCompute.addResolutionDefine(jacobiVariable.material);
 
+    outputVariable = gpuCompute.addVariable("velocityOutputSampler", document.getElementById("outputShader").textContent, outputMap);
+    gpuCompute.setVariableDependencies(outputVariable, [outputVariable]);
+    outputUniforms = outputVariable.material.uniforms;
+    outputUniforms["velocitySampler"] = {value: null};
+    outputUniforms["pressureSampler"] = {value: null};
+    gpuCompute.addResolutionDefine(outputVariable.material);
+
+    gpuCompute.setVariableDependencies(advectVariable, [advectVariable, outputVariable]);
 
 
     const error = gpuCompute.init();
     if (error != null) {
         console.log(error);
     }
-
-    outputShader = gpuCompute.createShaderMaterial(document.getElementById("outputShader").textContent, {
-        pressureSampler: {value: null},
-        velocitySampler: {value: null},
-    }) 
 }
 
 function fillTexture(texture) {
@@ -175,7 +183,7 @@ function fillTexture(texture) {
             pixels[p] = 0.0;
             pixels[p + 1] = 0.0;
             pixels[p + 2] = 0.0;
-            pixels[p + 3] = 1.0;
+            pixels[p + 3] = 0.0;
             p += 4;
         }
     }
@@ -194,62 +202,25 @@ function animate() {
     render();
 }
 
-function neutralPressure() {
-    const currentRenderTarget = gpuCompute.getCurrentRenderTarget(advectVariable);
-    const alternateRenderTarget = gpuCompute.getAlternateRenderTarget(advectVariable);
-    const jacobiTexture = gpuCompute.getCurrentRenderTarget(jacobiVariable);
-
-    outputShader.uniforms["pressureSampler"].value = jacobiTexture.texture;
-    outputShader.uniforms["velocitySampler"].value = currentRenderTarget.texture;
-    gpuCompute.doRenderTarget(outputShader, alternateRenderTarget);
-
-    outputShader.uniforms["velocitySampler"].value = alternateRenderTarget.texture;
-    gpuCompute.doRenderTarget(outputShader, currentRenderTarget);
-
-    material.uniforms.map.value = currentRenderTarget.texture;
-    alternateMaterial.uniforms.map.value = alternateRenderTarget.texture;
-
-}
-
 function update() {
-    /*let advectTexture = gpuCompute.getCurrentRenderTarget(advectVariable).texture;
-    
-
-    let advectAltTexture = gpuCompute.getAlternateRenderTarget(advectVariable).texture;
-    
-    //advectUniforms['velocitySampler'].value = advectTexture; 
-    
-    
-    let divergenceTexture = gpuCompute.getCurrentRenderTarget(divergenceVariable).texture;
-
-    //let divergenceAltTexture = gpuCompute.getAlternateRenderTarget(divergenceVariable).texture;
-    
-    //jacobiUniforms["velocitySampler"].value = advectAltTexture;
-    //jacobiUniforms["divergenceSampler"].value = divergenceTexture;
-    jacobiTexture = gpuCompute.getCurrentRenderTarget(jacobiVariable).texture;
-
-    let jacobiAltTexture = gpuCompute.getAlternateRenderTarget(jacobiVariable).texture;
-    //jacobiUniforms["pressureSampler"].value = jacobiTexture;*/
-
-    
-    
-    
+  
     divergenceUniforms["velocitySampler"].value = gpuCompute.getAlternateRenderTarget(advectVariable).texture;
+
     jacobiUniforms["velocitySampler"].value = gpuCompute.getAlternateRenderTarget(advectVariable).texture;
     jacobiUniforms["divergenceSampler"].value = gpuCompute.getAlternateRenderTarget(divergenceVariable).texture;
 
-    //material.uniforms.map.value = gpuCompute.getCurrentRenderTarget(divergenceVariable).texture;
-    //alternateMaterial.uniforms.map.value = gpuCompute.getAlternateRenderTarget(divergenceVariable).texture;
+    outputUniforms["velocitySampler"].value = gpuCompute.getAlternateRenderTarget(advectVariable).texture;
+    outputUniforms["pressureSampler"].value = gpuCompute.getAlternateRenderTarget(jacobiVariable).texture;
+
+    
     gpuCompute.compute();
-    //divergenceUpdate();
-    //jacobiIteration();
-    neutralPressure();
+    material.uniforms.textureMap.value = gpuCompute.getCurrentRenderTarget(advectVariable).texture;
+    alternateMaterial.uniforms.textureMap.value = gpuCompute.getAlternateRenderTarget(advectVariable).texture;
 }
 
 
 function render () {
     
     renderer.render(scene, camera);
-    advectUniforms["velocitySampler"].value = outputTexture;
 }
 

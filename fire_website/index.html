@@ -13,33 +13,62 @@
         }
     </script>
     <script id="fragmentShader", type="x-shader/x-fragment">
-        uniform sampler2D map;
+        uniform sampler2D textureMap;
         
         void main() {
+            vec2 invRes = vec2(1.0, 1.0) / vec2(512.0, 512.0);
+            vec2 uv = gl_FragCoord.xy * invRes;
 
-            vec2 uv = gl_FragCoord.xy / vec2(1024.0, 1024.0);
-        
-            vec4 textureValue = abs(texture2D(map, uv));
-            gl_FragColor = textureValue;
+            vec4 textureValue = texture2D(textureMap, uv);
+
+            if (textureValue.z > 0.0) {
+                gl_FragColor = vec4(0.4);
+            }
+            else {
+                gl_FragColor = abs(textureValue) * 0.008;
+            }
+            //gl_FragColor = vec4(uv, 0, 1);
+            
         }
     </script>
     <script id="advectShader", type="x-shader/x-fragment">
-        //uniform sampler2D velocitySampler;
         uniform float timestep;
+        const vec2 Force = vec2(100.0, 0.0);
+        const vec2 ForceAreaMin = vec2(0.0, 0.2);
+        const vec2 ForceAreaMax = vec2(0.06, 0.8);
+
+        const vec2 BarrierPosition = vec2(0.2, 0.5);
+        const float BarrierRadiusSq = 0.01;
 
         void main() {
-            vec2 uv = vec2(gl_FragCoord.x, gl_FragCoord.y) / vec2(512.0, 512.0);
-            vec2 textureValue = texture2D(velocitySampler, uv).xy;
+            vec2 invRes = vec2(1.0, 1.0) / resolution.xy;
+            vec2 uv = gl_FragCoord.xy * invRes;
 
-            vec2 uvOld = vec2(gl_FragCoord.x - textureValue.x * timestep, gl_FragCoord.y - textureValue.y * timestep) / vec2(512.0, 512.0);
-            vec2 textureValueOld = texture2D(velocitySampler, uvOld.xy).xy;
-            
-            
-            
-            gl_FragColor = vec4(textureValueOld, 0.0, 1.0);
-            
-            if (uv.x > 0.4 && uv.x < 0.6 && uv.y < 0.1 && uv.y > 0.0) {
-                gl_FragColor = vec4(textureValueOld, 0.0, 1.0) + vec4(0.0, 0.02, 0.0, 1.0);
+
+            vec2 oldVelocity = texture2D(velocityOutputSampler, uv).xy;
+            vec2 uvOld = uv - oldVelocity * timestep * invRes;
+            vec2 outputVelocity = texture2D(velocityOutputSampler, uvOld).xy;
+
+            if (uv.x > ForceAreaMin.x && uv.x < ForceAreaMax.x && 
+                uv.y > ForceAreaMin.y && uv.y < ForceAreaMax.y) 
+            {
+                outputVelocity += Force * timestep;
+            }
+
+            if (uv.x > 1.0 - invRes.x || uv.x < invRes.x ||
+                uv.y > 1.0 - invRes.y || uv.y < invRes.y) 
+            {
+                outputVelocity = vec2(0.0, 0.0);
+            }
+
+            vec2 toBarrier = BarrierPosition - uv;
+            toBarrier.x *= invRes.y / invRes.x;
+
+            if (dot(toBarrier, toBarrier) < BarrierRadiusSq) {
+                gl_FragColor = vec4(0.0, 0.0, 999.0, 0.0);
+            }
+            else {
+                gl_FragColor = vec4(outputVelocity, 0.0, 0.0);
             }
         }
     </script>
@@ -47,8 +76,13 @@
         uniform sampler2D velocitySampler;
 
         void main() {
-            vec2 invRes = vec2(1.0, 1.0) / vec2(512.0, 512.0);
+            vec2 invRes = vec2(1.0, 1.0) / resolution.xy;
             vec2 uv = gl_FragCoord.xy * invRes;
+
+            if (texture2D(velocitySampler, uv).z > 0.0) {
+                gl_FragColor = vec4(0.0);
+                return;
+            }
 
             float x0 = texture2D(velocitySampler, uv - vec2(invRes.x, 0)).x;
             float x1 = texture2D(velocitySampler, uv + vec2(invRes.x, 0)).x;
@@ -56,27 +90,33 @@
             float y1 = texture2D(velocitySampler, uv + vec2(0, invRes.y)).y;
 
             float divergence = ((x1 - x0) + (y1 - y0)) * 0.5;
-            gl_FragColor = vec4(divergence, divergence, divergence, 1.0);
-            //gl_FragColor = texture2D(velocitySampler, uv);
+            gl_FragColor = vec4(divergence);
         }
     </script>
 
     <script id="jacobiShader", type="x-shader/x-fragment">
         uniform sampler2D velocitySampler;
-        //uniform sampler2D pressureSampler;
         uniform sampler2D divergenceSampler;
 
         float samplePressure(vec2 pos) {
-            if (pos.x > 1.0 || pos.y > 1.0 || pos.x < 0.0 || pos.y < 0.0) {
+            vec2 border = 2.0 * vec2(1.0, 1.0) / resolution.xy;
+
+            if (texture2D(velocitySampler, pos).z > 0.0) {
                 return 0.0;
             }
+
+            if (pos.x > 1.0 - border.x || pos.y > 1.0 - border.y || 
+                pos.x < border.x || pos.y < border.y) 
+            {
+                return 0.0;
+            } 
             else {
                 return texture2D(pressureSampler, pos).x;
             }
         }
 
         void main() {
-            vec2 invRes = vec2(1.0, 1.0) / vec2(512.0, 512.0);
+            vec2 invRes = vec2(1.0, 1.0) / resolution.xy;
             vec2 uv = gl_FragCoord.xy * invRes;
 
             float div = texture2D(divergenceSampler, uv).x;
@@ -95,19 +135,22 @@
         uniform sampler2D pressureSampler;
 
         void main() {
-            vec2 invRes = vec2(1.0, 1.0) / vec2(512.0, 512.0);
+            vec2 invRes = vec2(1.0, 1.0) / resolution.xy;
             vec2 uv = gl_FragCoord.xy * invRes;
+
             float x0 = texture2D(pressureSampler, uv - vec2(invRes.x, 0)).x;
             float x1 = texture2D(pressureSampler, uv + vec2(invRes.x, 0)).x;
             float y0 = texture2D(pressureSampler, uv - vec2(0, invRes.y)).x;
             float y1 = texture2D(pressureSampler, uv + vec2(0, invRes.y)).x;
 
             vec2 pressureGradient = (vec2(x1, y1) - vec2(x0, y0)) * 0.5;
-            vec2 oldV = texture(velocitySampler, vec2(uv.x, uv.y)).xy;
+            vec2 oldV = texture2D(velocitySampler, uv).xy;
+
+
             gl_FragColor = vec4(oldV - pressureGradient, 0.0, 1.0);
         }
     </script>
-	<script src="./fluid_main.js"  type="module"></script>
+	<script src="./fluid_main.js?2"  type="module"></script>
 
 </body>
 </html>
