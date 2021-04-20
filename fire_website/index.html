@@ -27,7 +27,7 @@
             else {
                 gl_FragColor = abs(textureValue) * 0.008;
             }
-            //gl_FragColor = vec4(uv, 0, 1);
+            //gl_FragColor = vec4(textureValue.xy, 0, 1);
             
         }
     </script>
@@ -90,7 +90,7 @@
             float y1 = texture2D(velocitySampler, uv + vec2(0, invRes.y)).y;
 
             float divergence = ((x1 - x0) + (y1 - y0)) * 0.5;
-            gl_FragColor = vec4(divergence);
+            gl_FragColor = vec4(divergence, 0.0, 0.0, 1.0);
         }
     </script>
 
@@ -148,6 +148,7 @@
 
 
             gl_FragColor = vec4(oldV - pressureGradient, 0.0, 1.0);
+            //gl_FragColor = vec4(oldV, 0.0, 1.0);
         }
     </script>
 	<script src="./fluid_main.js?2"  type="module"></script>

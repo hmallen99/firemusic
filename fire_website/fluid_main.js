@@ -144,6 +144,8 @@ function init_fire() {
     advectUniforms = advectVariable.material.uniforms;
     advectUniforms['timestep'] = {value: 0.03};
     gpuCompute.addResolutionDefine(advectVariable.material);
+    advectVariable.minFilter = THREE.LinearFilter;
+    advectVariable.magFilter = THREE.LinearFilter;
 
 
     divergenceVariable = gpuCompute.addVariable("divergenceSampler", document.getElementById("divergenceShader").textContent, divergenceMap);
@@ -151,6 +153,8 @@ function init_fire() {
     divergenceUniforms = divergenceVariable.material.uniforms;
     divergenceUniforms["velocitySampler"] = {value: null};
     gpuCompute.addResolutionDefine(divergenceVariable.material);
+    divergenceVariable.minFilter = THREE.LinearFilter;
+    divergenceVariable.magFilter = THREE.LinearFilter;
 
     jacobiVariable = gpuCompute.addVariable("pressureSampler", document.getElementById("jacobiShader").textContent, pressureMap);
     gpuCompute.setVariableDependencies(jacobiVariable, [jacobiVariable]);
@@ -158,6 +162,8 @@ function init_fire() {
     jacobiUniforms["velocitySampler"] = {value: null};
     jacobiUniforms["divergenceSampler"] = {value: null};
     gpuCompute.addResolutionDefine(jacobiVariable.material);
+    jacobiVariable.minFilter = THREE.LinearFilter;
+    jacobiVariable.magFilter = THREE.LinearFilter;
 
     outputVariable = gpuCompute.addVariable("velocityOutputSampler", document.getElementById("outputShader").textContent, outputMap);
     gpuCompute.setVariableDependencies(outputVariable, [outputVariable]);
@@ -165,6 +171,9 @@ function init_fire() {
     outputUniforms["velocitySampler"] = {value: null};
     outputUniforms["pressureSampler"] = {value: null};
     gpuCompute.addResolutionDefine(outputVariable.material);
+    outputVariable.minFilter = THREE.LinearFilter;
+    outputVariable.magFilter = THREE.LinearFilter;
+
 
     gpuCompute.setVariableDependencies(advectVariable, [advectVariable, outputVariable]);
 
