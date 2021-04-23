@@ -29,8 +29,8 @@ let renderer,
     divergenceUniforms,
     jacobiVariable,
     jacobiUniforms,
-    windowSize,
-    outputShader,
+    temperatureUniforms,
+    temperatureVariable,
     outputVariable,
     outputUniforms,
     gpuCompute;
@@ -40,7 +40,6 @@ animate();
 
 function init() {
 
-    windowSize = new THREE.Vector2(window.innerWidth, window.innerHeight);
 
     container = document.createElement( 'div' );
     document.body.appendChild(container);
@@ -133,16 +132,28 @@ function init_fire() {
     var pressureMap = gpuCompute.createTexture();
     var velocityMap = gpuCompute.createTexture();
     var outputMap = gpuCompute.createTexture();
+    var temperatureMap = gpuCompute.createTexture();
 
-    fillTexture(divergenceMap);
-    fillTexture(pressureMap);
-    fillTexture(velocityMap);
-    fillTexture(outputMap);
+    fillTexture(divergenceMap, 0.0);
+    fillTexture(pressureMap, 0.0);
+    fillTexture(velocityMap, 0.0);
+    fillTexture(outputMap, 0.0);
+    fillTexture(temperatureMap, 60.0);
     
+
+    temperatureVariable = gpuCompute.addVariable("temperatureSampler", document.getElementById("temperatureShader").textContent, temperatureMap);
+    temperatureUniforms = temperatureVariable.material.uniforms;
+    temperatureUniforms["timestep"] = {value: 0.03};
+    temperatureVariable.minFilter = THREE.LinearFilter;
+    temperatureVariable.magFilter = THREE.LinearFilter;
+    gpuCompute.addResolutionDefine(temperatureVariable.material);
 
     advectVariable = gpuCompute.addVariable("velocitySampler", document.getElementById("advectShader").textContent, velocityMap);
     advectUniforms = advectVariable.material.uniforms;
-    advectUniforms['timestep'] = {value: 0.03};
+    advectUniforms["timestep"] = {value: 0.03};
+    advectUniforms["b"] = {value: 0.5};
+    advectUniforms["inv_T_zero"] = {value: 1.0 / 60.0};
+    advectUniforms["temperatureSampler"] = {value: null};
     gpuCompute.addResolutionDefine(advectVariable.material);
     advectVariable.minFilter = THREE.LinearFilter;
     advectVariable.magFilter = THREE.LinearFilter;
@@ -175,6 +186,7 @@ function init_fire() {
     outputVariable.magFilter = THREE.LinearFilter;
 
 
+    gpuCompute.setVariableDependencies(temperatureVariable, [temperatureVariable, outputVariable]);
     gpuCompute.setVariableDependencies(advectVariable, [advectVariable, outputVariable]);
 
 
@@ -184,15 +196,15 @@ function init_fire() {
     }
 }
 
-function fillTexture(texture) {
+function fillTexture(texture, texValue) {
     const pixels = texture.image.data;
     var p = 0;
     for (var i = 0; i < WIDTH; i++) {
         for (var j = 0; j < WIDTH; j++) {
-            pixels[p] = 0.0;
-            pixels[p + 1] = 0.0;
-            pixels[p + 2] = 0.0;
-            pixels[p + 3] = 0.0;
+            pixels[p] = texValue;
+            pixels[p + 1] = texValue;
+            pixels[p + 2] = texValue;
+            pixels[p + 3] = texValue;
             p += 4;
         }
     }
@@ -212,6 +224,7 @@ function animate() {
 }
 
 function update() {
+    advectUniforms["temperatureSampler"].value = gpuCompute.getAlternateRenderTarget(temperatureVariable).texture;
   
     divergenceUniforms["velocitySampler"].value = gpuCompute.getAlternateRenderTarget(advectVariable).texture;
 

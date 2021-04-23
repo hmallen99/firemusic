@@ -25,20 +25,34 @@
                 gl_FragColor = vec4(0.4);
             }
             else {
-                gl_FragColor = abs(textureValue) * 0.008;
+                float output_color = length(textureValue.xy) * 0.008;
+                gl_FragColor = vec4(vec3(output_color), 1.0);
             }
-            //gl_FragColor = vec4(textureValue.xy, 0, 1);
+            //gl_FragColor = vec4(textureValue.xyz * 0.01, 1) ;
             
         }
     </script>
     <script id="advectShader", type="x-shader/x-fragment">
         uniform float timestep;
-        const vec2 Force = vec2(100.0, 0.0);
-        const vec2 ForceAreaMin = vec2(0.0, 0.2);
-        const vec2 ForceAreaMax = vec2(0.06, 0.8);
+        uniform sampler2D temperatureSampler;
 
-        const vec2 BarrierPosition = vec2(0.2, 0.5);
+        uniform float b; // represents the buoyancy constant
+        uniform float inv_T_zero; // inverse of T_0, the ambient room temperature.
+
+        const vec2 Force = vec2(0.0, 100.0);
+        const vec2 ForceAreaMin = vec2(0.4, 0.0);
+        const vec2 ForceAreaMax = vec2(0.6, 0.06);
+
+        const vec2 BarrierPosition = vec2(1.5, 0.2);
         const float BarrierRadiusSq = 0.01;
+
+        vec2 buoyancyForce(vec2 pos) {
+            float temperature = texture2D(temperatureSampler, pos).x;
+            if (temperature == 0.0) {
+                return vec2(0.0);
+            }
+            return b * (inv_T_zero - (1.0 / temperature)) * vec2(0.0, 1.0);
+        }
 
         void main() {
             vec2 invRes = vec2(1.0, 1.0) / resolution.xy;
@@ -54,6 +68,8 @@
             {
                 outputVelocity += Force * timestep;
             }
+
+            outputVelocity += buoyancyForce(uv);
 
             if (uv.x > 1.0 - invRes.x || uv.x < invRes.x ||
                 uv.y > 1.0 - invRes.y || uv.y < invRes.y) 
@@ -72,6 +88,34 @@
             }
         }
     </script>
+
+    <script id="temperatureShader", type="x-shader/x-fragment">
+        uniform float timestep;
+
+        const vec2 HeatAreaMin = vec2(0.4, 0.0);
+        const vec2 HeatAreaMax = vec2(0.6, 0.06);
+
+        float HeatAreaTemp = 100.0;
+
+        void main() {
+            vec2 invRes = vec2(1.0, 1.0) / resolution.xy;
+            vec2 uv = gl_FragCoord.xy * invRes;
+
+            vec4 oldVelocity = texture2D(velocityOutputSampler, uv);
+            vec2 uvOld = uv - oldVelocity.xy - timestep * invRes;
+            float temperature = texture2D(temperatureSampler, uvOld).x;
+
+            if (uv.x > HeatAreaMin.x && uv.x < HeatAreaMax.x && 
+                uv.y > HeatAreaMin.y && uv.y < HeatAreaMax.y) 
+            {
+                temperature = HeatAreaTemp;
+            }
+
+            gl_FragColor = vec4(temperature);
+        }
+
+    </script>
+
     <script id="divergenceShader", type="x-shader/x-fragment">
         uniform sampler2D velocitySampler;
 
