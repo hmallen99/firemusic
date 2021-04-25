@@ -14,7 +14,7 @@ if ( WEBGL.isWebGL2Available() === false ) {
 
 }
 
-const WIDTH = 512;
+const WIDTH = 64;
 
 let renderer,
     scene,
@@ -108,7 +108,7 @@ function fillTexture(texture, texValue) {
     const pixels = texture.image.data;
     var p = 0;
     for (var i = 0; i < WIDTH; i++) {
-        for (var j = 0; j < WIDTH; j++) {
+        for (var j = 0; j < WIDTH * WIDTH; j++) {
             pixels[p] = texValue;
             pixels[p + 1] = texValue;
             pixels[p + 2] = texValue;
@@ -174,7 +174,7 @@ function init_box() {
 }
 
 function init_fire() {
-    const geometry = new THREE.PlaneGeometry(WIDTH, WIDTH);
+    const geometry = new THREE.PlaneGeometry(WIDTH * WIDTH, WIDTH);
     material = new THREE.ShaderMaterial({
         uniforms: THREE.UniformsUtils.merge( [
             THREE.ShaderLib['phong'].uniforms, 
@@ -202,7 +202,7 @@ function init_fire() {
     scene.add(fireMesh);
     scene.add(alternateFireMesh);
 
-    gpuCompute = new GPUComputationRenderer(WIDTH, WIDTH, renderer);
+    gpuCompute = new GPUComputationRenderer(WIDTH * WIDTH, WIDTH, renderer);
     
 
     var divergenceMap = gpuCompute.createTexture();
@@ -217,10 +217,12 @@ function init_fire() {
     fillTexture(outputMap, 0.0);
     fillTexture(temperatureMap, 60.0);
     
+    var blockRes = new THREE.Vector3(64.0, 64.0, 64.0);
 
     temperatureVariable = gpuCompute.addVariable("temperatureSampler", document.getElementById("temperatureShader").textContent, temperatureMap);
     temperatureUniforms = temperatureVariable.material.uniforms;
     temperatureUniforms["timestep"] = {value: 0.03};
+    temperatureUniforms["blockRes"] = {value: blockRes};
     temperatureVariable.minFilter = THREE.LinearFilter;
     temperatureVariable.magFilter = THREE.LinearFilter;
     gpuCompute.addResolutionDefine(temperatureVariable.material);
@@ -231,6 +233,7 @@ function init_fire() {
     advectUniforms["b"] = {value: 0.5};
     advectUniforms["inv_T_zero"] = {value: 1.0 / 60.0};
     advectUniforms["temperatureSampler"] = {value: null};
+    advectUniforms["blockRes"] = {value: blockRes};
     gpuCompute.addResolutionDefine(advectVariable.material);
     advectVariable.minFilter = THREE.LinearFilter;
     advectVariable.magFilter = THREE.LinearFilter;
@@ -240,6 +243,7 @@ function init_fire() {
     gpuCompute.setVariableDependencies(divergenceVariable, [divergenceVariable]);
     divergenceUniforms = divergenceVariable.material.uniforms;
     divergenceUniforms["velocitySampler"] = {value: null};
+    divergenceUniforms["blockRes"] = {value: blockRes};
     gpuCompute.addResolutionDefine(divergenceVariable.material);
     divergenceVariable.minFilter = THREE.LinearFilter;
     divergenceVariable.magFilter = THREE.LinearFilter;
@@ -249,6 +253,7 @@ function init_fire() {
     jacobiUniforms = jacobiVariable.material.uniforms;
     jacobiUniforms["velocitySampler"] = {value: null};
     jacobiUniforms["divergenceSampler"] = {value: null};
+    jacobiUniforms["blockRes"] = {value: blockRes};
     gpuCompute.addResolutionDefine(jacobiVariable.material);
     jacobiVariable.minFilter = THREE.LinearFilter;
     jacobiVariable.magFilter = THREE.LinearFilter;
@@ -258,6 +263,7 @@ function init_fire() {
     outputUniforms = outputVariable.material.uniforms;
     outputUniforms["velocitySampler"] = {value: null};
     outputUniforms["pressureSampler"] = {value: null};
+    outputUniforms["blockRes"] = {value: blockRes};
     gpuCompute.addResolutionDefine(outputVariable.material);
     outputVariable.minFilter = THREE.LinearFilter;
     outputVariable.magFilter = THREE.LinearFilter;

@@ -1,0 +1,33 @@
+given: point in 3d space, xyz
+want: texture value from 2D map as if it were sampled from 3D
+=> convert xyz to uv
+=> for a 4 x 4 cube, we want this texture organization
+1 1 1 1 2 2 2 2 3 3 3 3 4 4 4 4
+1 1 1 1 2 2 2 2 3 3 3 3 4 4 4 4
+1 1 1 1 2 2 2 2 3 3 3 3 4 4 4 4
+1 1 1 1 2 2 2 2 3 3 3 3 4 4 4 4
+
+
+ 
+
+
+uniform width; // width of block
+uniform height; // height of block
+uniform depth; // number of blocks
+
+vec4 getTex3D(vec3 xyz) {
+    vec2 uv1 = vec2(xyz.x + floor(xyz.z) * width, xyz.y);
+    vec4 color1 = texture2D(map, uv1);
+
+    vec2 uv2 = vec2(xyz.x + floor(xyz.z) * width, xyz.y);
+    vec4 color2 = texture2D(map, uv2);
+
+    float t = xyz.z - floor(xyz.z);
+    return (1 - t) * color1 + t * color2;
+
+}
+
+
+edge cases:
+
+handle interpolation on z axis? => interp with floor of z and ceil of z value
