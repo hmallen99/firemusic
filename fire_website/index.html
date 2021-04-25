@@ -113,14 +113,14 @@
 
             vec4 textureValue = texture2D(textureMap, uv);
 
-            if (textureValue.z > 0.0) {
+            if (textureValue.w > 0.0) {
                 gl_FragColor = vec4(0.4);
             }
             else {
-                float output_color = length(textureValue.xy) * 0.008;
+                float output_color = length(textureValue.xyz) * 0.008;
                 gl_FragColor = vec4(vec3(output_color), 1.0);
             }
-            //gl_FragColor = vec4(textureValue.xyz * 0.01, 1) ;
+            //gl_FragColor = vec4(vec3(textureValue.z), 1) ;
             
         }
     </script>
@@ -136,24 +136,26 @@
         const vec3 ForceAreaMin = vec3(0.4, 0.0, 0.4);
         const vec3 ForceAreaMax = vec3(0.6, 0.06, 0.6);
 
-        const vec3 BarrierPosition = vec3(0.5, 0.2, 0.2);
+        const vec3 BarrierPosition = vec3(0.5, 0.2, 0.5);
         const float BarrierRadiusSq = 0.01;
 
-        vec4 getTex3D(sampler2D map, vec3 xyz) {
-            vec2 uv1 = vec2(xyz.x + floor(xyz.z) * blockRes.x, xyz.y);
+        vec4 getTex3D(sampler2D map, vec3 uvw) {
+            vec3 xyz = uvw * blockRes;
+            vec2 invRes = vec2(1.0, 1.0) / resolution.xy;
+            float z_part = xyz.z - mod(xyz.z, 1.0);
+            vec2 uv1 = vec2(xyz.x + z_part * blockRes.x , xyz.y) * invRes;
             vec4 color1 = texture2D(map, uv1);
         
-            vec2 uv2 = vec2(xyz.x + floor(xyz.z) * blockRes.x, xyz.y);
+            vec2 uv2 = vec2(xyz.x + (z_part + 1.0) * blockRes.x, xyz.y) * invRes;
             vec4 color2 = texture2D(map, uv2);
         
             float t = xyz.z - floor(xyz.z);
             return (1.0 - t) * color1 + t * color2;
-        
         }
 
         vec3 getXYZ(vec2 xy) {
-            float x_coord = xy.x - floor(xy.x / blockRes.z) * blockRes.z;
-            return vec3(x_coord, xy.y, xy.x / blockRes.z);
+            float x_coord = xy.x - floor(xy.x / blockRes.x) * blockRes.x;
+            return vec3(x_coord, xy.y, floor(xy.x / blockRes.x));
         }
 
         vec3 buoyancyForce(vec2 pos) {
@@ -186,8 +188,10 @@
 
             outputVelocity += buoyancyForce(uv);
 
-            if (uv.x > 1.0 - invRes.x || uv.x < invRes.x ||
-                uv.y > 1.0 - invRes.y || uv.y < invRes.y) 
+            if (uvw.x > 1.0 - invBlockRes.x || uvw.x < invBlockRes.x ||
+                uvw.y > 1.0 - invBlockRes.y || uvw.y < invBlockRes.y ||
+                uvw.z > 1.0 - invBlockRes.z || uvw.z < invBlockRes.z
+            )  
             {
                 outputVelocity = vec3(0.0, 0.0, 0.0);
             }
@@ -213,21 +217,23 @@
 
         float HeatAreaTemp = 100.0;
 
-        vec4 getTex3D(sampler2D map, vec3 xyz) {
-            vec2 uv1 = vec2(xyz.x + floor(xyz.z) * blockRes.x, xyz.y);
+        vec4 getTex3D(sampler2D map, vec3 uvw) {
+            vec3 xyz = uvw * blockRes;
+            vec2 invRes = vec2(1.0, 1.0) / resolution.xy;
+            float z_part = xyz.z - mod(xyz.z, 1.0);
+            vec2 uv1 = vec2(xyz.x + z_part * blockRes.x , xyz.y) * invRes;
             vec4 color1 = texture2D(map, uv1);
         
-            vec2 uv2 = vec2(xyz.x + floor(xyz.z) * blockRes.x, xyz.y);
+            vec2 uv2 = vec2(xyz.x + (z_part + 1.0) * blockRes.x, xyz.y) * invRes;
             vec4 color2 = texture2D(map, uv2);
         
             float t = xyz.z - floor(xyz.z);
             return (1.0 - t) * color1 + t * color2;
-        
         }
 
         vec3 getXYZ(vec2 xy) {
-            float x_coord = xy.x - floor(xy.x / blockRes.z) * blockRes.z;
-            return vec3(x_coord, xy.y, xy.x / blockRes.z);
+            float x_coord = xy.x - floor(xy.x / blockRes.x) * blockRes.x;
+            return vec3(x_coord, xy.y, floor(xy.x / blockRes.x));
         }
 
 
@@ -248,7 +254,8 @@
                 uvw.z > HeatAreaMin.y && uvw.z < HeatAreaMax.y
             ) 
             {
-                temperature = HeatAreaTemp;
+                // TODO: change this to heatArea Temp
+                temperature = 60.0;
             }
 
             gl_FragColor = vec4(temperature);
@@ -261,21 +268,23 @@
 
         uniform vec3 blockRes;
 
-        vec4 getTex3D(sampler2D map, vec3 xyz) {
-            vec2 uv1 = vec2(xyz.x + floor(xyz.z) * blockRes.x, xyz.y);
+        vec4 getTex3D(sampler2D map, vec3 uvw) {
+            vec3 xyz = uvw * blockRes;
+            vec2 invRes = vec2(1.0, 1.0) / resolution.xy;
+            float z_part = xyz.z - mod(xyz.z, 1.0);
+            vec2 uv1 = vec2(xyz.x + z_part * blockRes.x , xyz.y) * invRes;
             vec4 color1 = texture2D(map, uv1);
         
-            vec2 uv2 = vec2(xyz.x + floor(xyz.z) * blockRes.x, xyz.y);
+            vec2 uv2 = vec2(xyz.x + (z_part + 1.0) * blockRes.x, xyz.y) * invRes;
             vec4 color2 = texture2D(map, uv2);
         
             float t = xyz.z - floor(xyz.z);
             return (1.0 - t) * color1 + t * color2;
-        
         }
 
         vec3 getXYZ(vec2 xy) {
-            float x_coord = xy.x - floor(xy.x / blockRes.z) * blockRes.z;
-            return vec3(x_coord, xy.y, xy.x / blockRes.z);
+            float x_coord = xy.x - floor(xy.x / blockRes.x) * blockRes.x;
+            return vec3(x_coord, xy.y, floor(xy.x / blockRes.x));
         }
 
 
@@ -310,21 +319,23 @@
 
         uniform vec3 blockRes;
 
-        vec4 getTex3D(sampler2D map, vec3 xyz) {
-            vec2 uv1 = vec2(xyz.x + floor(xyz.z) * blockRes.x, xyz.y);
+        vec4 getTex3D(sampler2D map, vec3 uvw) {
+            vec3 xyz = uvw * blockRes;
+            vec2 invRes = vec2(1.0, 1.0) / resolution.xy;
+            float z_part = xyz.z - mod(xyz.z, 1.0);
+            vec2 uv1 = vec2(xyz.x + z_part * blockRes.x , xyz.y) * invRes;
             vec4 color1 = texture2D(map, uv1);
         
-            vec2 uv2 = vec2(xyz.x + floor(xyz.z) * blockRes.x, xyz.y);
+            vec2 uv2 = vec2(xyz.x + (z_part + 1.0) * blockRes.x, xyz.y) * invRes;
             vec4 color2 = texture2D(map, uv2);
         
             float t = xyz.z - floor(xyz.z);
             return (1.0 - t) * color1 + t * color2;
-        
         }
 
         vec3 getXYZ(vec2 xy) {
-            float x_coord = xy.x - floor(xy.x / blockRes.z) * blockRes.z;
-            return vec3(x_coord, xy.y, xy.x / blockRes.z);
+            float x_coord = xy.x - floor(xy.x / blockRes.x) * blockRes.x;
+            return vec3(x_coord, xy.y, floor(xy.x / blockRes.x));
         }
 
 
@@ -372,21 +383,23 @@
 
         uniform vec3 blockRes;
 
-        vec4 getTex3D(sampler2D map, vec3 xyz) {
-            vec2 uv1 = vec2(xyz.x + floor(xyz.z) * blockRes.x, xyz.y);
+        vec4 getTex3D(sampler2D map, vec3 uvw) {
+            vec3 xyz = uvw * blockRes;
+            vec2 invRes = vec2(1.0, 1.0) / resolution.xy;
+            float z_part = xyz.z - mod(xyz.z, 1.0);
+            vec2 uv1 = vec2(xyz.x + z_part * blockRes.x , xyz.y) * invRes;
             vec4 color1 = texture2D(map, uv1);
         
-            vec2 uv2 = vec2(xyz.x + floor(xyz.z) * blockRes.x, xyz.y);
+            vec2 uv2 = vec2(xyz.x + (z_part + 1.0) * blockRes.x, xyz.y) * invRes;
             vec4 color2 = texture2D(map, uv2);
         
             float t = xyz.z - floor(xyz.z);
             return (1.0 - t) * color1 + t * color2;
-        
         }
 
         vec3 getXYZ(vec2 xy) {
-            float x_coord = xy.x - floor(xy.x / blockRes.z) * blockRes.z;
-            return vec3(x_coord, xy.y, xy.x / blockRes.z);
+            float x_coord = xy.x - floor(xy.x / blockRes.x) * blockRes.x;
+            return vec3(x_coord, xy.y, floor(xy.x / blockRes.x));
         }
 
         void main() {
@@ -409,6 +422,7 @@
 
 
             gl_FragColor = vec4(oldV - pressureGradient, 1.0);
+            //gl_FragColor = vec4(oldV, 1.0);
         }
     </script>
 	<script src="./fluid_main.js?2"  type="module"></script>
