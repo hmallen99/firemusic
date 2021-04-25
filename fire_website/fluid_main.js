@@ -25,6 +25,9 @@ let renderer,
     fireMesh,
     alternateFireMesh,
     boxMesh,
+    altBoxMesh,
+    boxMaterial,
+    altBoxMaterial,
     advectVariable,
     advectUniforms,
     divergenceVariable,
@@ -65,8 +68,8 @@ function init() {
 
     window.addEventListener( 'resize', onWindowResize );
 
+    init_box();
     init_fire();
-    //init_box();
 }
 
 function fillTexture3D(texture, value) {
@@ -153,14 +156,14 @@ function perlinTexture() {
 }
 
 function init_box() {
-    const texture = perlinTexture();
+    //const texture = perlinTexture();
 
     const boxGeometry = new THREE.BoxGeometry(2, 2, 2);
 
-    const boxMaterial = new THREE.RawShaderMaterial({
+    boxMaterial = new THREE.RawShaderMaterial({
         glslVersion: THREE.GLSL3,
         uniforms: {
-            map: {value: texture},
+            map: {value: null},
             cameraPos: {value: new THREE.Vector3()},
             threshold: {value: 0.6},
             steps: {value: 200}
@@ -169,8 +172,22 @@ function init_box() {
         fragmentShader: document.getElementById('boxFragmentShader').textContent
     });
 
-    boxMesh = new THREE.Mesh(boxGeometry, boxMaterial)
+    altBoxMaterial = new THREE.RawShaderMaterial({
+        glslVersion: THREE.GLSL3,
+        uniforms: {
+            map: {value: null},
+            cameraPos: {value: new THREE.Vector3()},
+            threshold: {value: 0.6},
+            steps: {value: 200}
+        },
+        vertexShader: document.getElementById('boxVertexShader').textContent,
+        fragmentShader: document.getElementById('boxFragmentShader').textContent
+    });
+
+    boxMesh = new THREE.Mesh(boxGeometry, boxMaterial);
+    altBoxMesh = new THREE.Mesh(boxGeometry, altBoxMaterial);
     scene.add(boxMesh);
+    scene.add(altBoxMesh);
 }
 
 function init_fire() {
@@ -199,8 +216,8 @@ function init_fire() {
 
     fireMesh = new THREE.Mesh(geometry, material);
     alternateFireMesh = new THREE.Mesh(geometry, alternateMaterial);
-    scene.add(fireMesh);
-    scene.add(alternateFireMesh);
+    //scene.add(fireMesh);
+    //scene.add(alternateFireMesh);
 
     gpuCompute = new GPUComputationRenderer(WIDTH * WIDTH, WIDTH, renderer);
     
@@ -307,14 +324,17 @@ function update() {
 
     
     gpuCompute.compute();
-    material.uniforms.textureMap.value = gpuCompute.getCurrentRenderTarget(advectVariable).texture;
-    alternateMaterial.uniforms.textureMap.value = gpuCompute.getAlternateRenderTarget(advectVariable).texture;
+    //material.uniforms.textureMap.value = gpuCompute.getCurrentRenderTarget(advectVariable).texture;
+    //alternateMaterial.uniforms.textureMap.value = gpuCompute.getAlternateRenderTarget(advectVariable).texture;
+    boxMaterial.uniforms.map.value = gpuCompute.getCurrentRenderTarget(advectVariable).texture;
+    altBoxMaterial.uniforms.map.value = gpuCompute.getAlternateRenderTarget(advectVariable).texture;
 }
 
 
 function render () {
     
-    //boxMesh.material.uniforms.cameraPos.value.copy(camera.position);
+    boxMesh.material.uniforms.cameraPos.value.copy(camera.position);
+    altBoxMesh.material.uniforms.cameraPos.value.copy(camera.position);
     renderer.render(scene, camera);
 }
 
