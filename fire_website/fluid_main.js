@@ -1,11 +1,12 @@
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.118/build/three.module.js';
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.127/build/three.module.js';
 
-import { GUI } from 'https://cdn.jsdelivr.net/npm/three@0.118/examples/jsm/libs/dat.gui.module.js';
-import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.118/examples/jsm/controls/OrbitControls.js';
-import { NRRDLoader } from 'https://cdn.jsdelivr.net/npm/three@0.118/examples/jsm/loaders/NRRDLoader.js';
-import { VolumeRenderShader1 } from 'https://cdn.jsdelivr.net/npm/three@0.118/examples/jsm/shaders/VolumeShader.js';
-import { WEBGL } from 'https://cdn.jsdelivr.net/npm/three@0.118/examples/jsm/WebGL.js';
-import { GPUComputationRenderer } from 'https://cdn.jsdelivr.net/npm/three@0.118/examples/jsm/misc/GPUComputationRenderer.js';
+import { GUI } from 'https://cdn.jsdelivr.net/npm/three@0.127/examples/jsm/libs/dat.gui.module.js';
+import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.127/examples/jsm/controls/OrbitControls.js';
+import { NRRDLoader } from 'https://cdn.jsdelivr.net/npm/three@0.127/examples/jsm/loaders/NRRDLoader.js';
+import { VolumeRenderShader1 } from 'https://cdn.jsdelivr.net/npm/three@0.127/examples/jsm/shaders/VolumeShader.js';
+import { WEBGL } from 'https://cdn.jsdelivr.net/npm/three@0.127/examples/jsm/WebGL.js';
+import { GPUComputationRenderer } from 'https://cdn.jsdelivr.net/npm/three@0.127/examples/jsm/misc/GPUComputationRenderer.js';
+import { ImprovedNoise } from 'https://cdn.jsdelivr.net/npm/three@0.127/examples/jsm/math/ImprovedNoise.js';
 
 if ( WEBGL.isWebGL2Available() === false ) {
 
@@ -23,6 +24,7 @@ let renderer,
     container,
     fireMesh,
     alternateFireMesh,
+    boxMesh,
     advectVariable,
     advectUniforms,
     divergenceVariable,
@@ -44,9 +46,11 @@ function init() {
     container = document.createElement( 'div' );
     document.body.appendChild(container);
 
-    camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 3000);
-    camera.position.set(0, 0, 1);
-    camera.lookAt(0, 0, 0);
+    camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(0, 0, 2);
+    //camera.lookAt(0, 0, 0);
+
+    
 
     scene = new THREE.Scene();
 
@@ -57,12 +61,15 @@ function init() {
     renderer.setSize(window.innerWidth, window.innerHeight);
     container.appendChild(renderer.domElement);
 
+    new OrbitControls(camera, renderer.domElement);
+
     window.addEventListener( 'resize', onWindowResize );
 
     init_fire();
+    //init_box();
 }
 
-function create_3d_tex() {
+function fillTexture3D(texture, value) {
     // create a 2d texture that encodes 3d data, e.g. the texture below is a 3 x 2 x 6 cube
     /*
     1 1 1 2 2 2
@@ -77,8 +84,9 @@ function create_3d_tex() {
     //const velocityMap0 = gpuCompute.createTexture();
     //const pressureMap0 = gpuCompute.createTexture();
     //const divergenceMap0 = gpuCompute.createTexture();
+    const pixels = texture.image.data;
 
-    /*var p = 0;
+    var p = 0;
     for (var j = 0; j < 8; j++) {
         for (var i = 0; i < 8; i++) {
             for (var y = 0; y < 64; y++) {
@@ -93,7 +101,76 @@ function create_3d_tex() {
                 }
             }
         }
-    }*/
+    }
+}
+
+function fillTexture(texture, texValue) {
+    const pixels = texture.image.data;
+    var p = 0;
+    for (var i = 0; i < WIDTH; i++) {
+        for (var j = 0; j < WIDTH; j++) {
+            pixels[p] = texValue;
+            pixels[p + 1] = texValue;
+            pixels[p + 2] = texValue;
+            pixels[p + 3] = texValue;
+            p += 4;
+        }
+    }
+}
+
+function perlinTexture() {
+    const size = 128;
+    const data = new Uint8Array( size * size * size );
+
+    let i = 0;
+    const perlin = new ImprovedNoise();
+    const vector = new THREE.Vector3();
+
+    for ( let z = 0; z < size; z ++ ) {
+
+        for ( let y = 0; y < size; y ++ ) {
+
+            for ( let x = 0; x < size; x ++ ) {
+
+                vector.set( x, y, z ).divideScalar( size );
+
+                const d = perlin.noise( vector.x * 6.5, vector.y * 6.5, vector.z * 6.5 );
+
+                data[ i ++ ] = d * 128 + 128;
+
+            }
+
+        }
+
+    }
+
+    const texture = new THREE.DataTexture3D( data, size, size, size );
+    texture.format = THREE.RedFormat;
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+    texture.unpackAlignment = 1;
+    return texture;
+}
+
+function init_box() {
+    const texture = perlinTexture();
+
+    const boxGeometry = new THREE.BoxGeometry(2, 2, 2);
+
+    const boxMaterial = new THREE.RawShaderMaterial({
+        glslVersion: THREE.GLSL3,
+        uniforms: {
+            map: {value: texture},
+            cameraPos: {value: new THREE.Vector3()},
+            threshold: {value: 0.6},
+            steps: {value: 200}
+        },
+        vertexShader: document.getElementById('boxVertexShader').textContent,
+        fragmentShader: document.getElementById('boxFragmentShader').textContent
+    });
+
+    boxMesh = new THREE.Mesh(boxGeometry, boxMaterial)
+    scene.add(boxMesh);
 }
 
 function init_fire() {
@@ -196,19 +273,7 @@ function init_fire() {
     }
 }
 
-function fillTexture(texture, texValue) {
-    const pixels = texture.image.data;
-    var p = 0;
-    for (var i = 0; i < WIDTH; i++) {
-        for (var j = 0; j < WIDTH; j++) {
-            pixels[p] = texValue;
-            pixels[p + 1] = texValue;
-            pixels[p + 2] = texValue;
-            pixels[p + 3] = texValue;
-            p += 4;
-        }
-    }
-}
+
 
 function onWindowResize() {
     camera.aspect = window.innerWidth / window.innerHeight;
@@ -243,6 +308,7 @@ function update() {
 
 function render () {
     
+    //boxMesh.material.uniforms.cameraPos.value.copy(camera.position);
     renderer.render(scene, camera);
 }
 
