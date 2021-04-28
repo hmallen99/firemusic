@@ -31,99 +31,80 @@ const _FS = [
 "varying vec4 vColour;",
 "varying vec2 vAngle;",
 
-"vec3 mod289(vec3 x) {",
-    "return x - floor(x * (1.0 / 289.0)) * 289.0;",
-"}",
-
-"vec4 mod289(vec4 x) {",
-    "return x - floor(x * (1.0 / 289.0)) * 289.0;",
-"}",
-
-"vec4 permute(vec4 x) {",
-    "return mod289(((x * 34.0) + 1.0) * x);",
-"}",
-
-"vec4 taylorInvSqrt(vec4 r) {",
-    "return 1.79284291400159 - 0.85373472095314 * r;",
-"}",
-
-"float snoise(vec3 v) {",
-    "const vec2 C = vec2(1.0 / 6.0, 1.0 / 3.0);",
-    "const vec4 D = vec4(0.0, 0.5, 1.0, 2.0);",
-
-    // First corner
-    "vec3 i  = floor(v + dot(v, C.yyy));",
-    "vec3 x0 = v - i + dot(i, C.xxx);",
-
-    // Other corners
-    "vec3 g = step(x0.yzx, x0.xyz);",
-    "vec3 l = 1.0 - g;",
-    "vec3 i1 = min(g.xyz, l.zxy);",
-    "vec3 i2 = max(g.xyz, l.zxy);",
-
-    "vec3 x1 = x0 - i1 + C.xxx;",
-    "vec3 x2 = x0 - i2 + C.yyy;", // 2.0*C.x = 1/3 = C.y
-    "vec3 x3 = x0 - D.yyy;",      // -1.0+3.0*C.x = -0.5 = -D.y
-
-    // Permutations
-    "i = mod289(i); ",
-    "vec4 p = permute(permute(permute( ",
-            "i.z + vec4(0.0, i1.z, i2.z, 1.0))",
-            "+ i.y + vec4(0.0, i1.y, i2.y, 1.0)) ",
-            "+ i.x + vec4(0.0, i1.x, i2.x, 1.0));",
-
-    // Gradients: 7x7 points over a square, mapped onto an octahedron.
-    // The ring size 17*17 = 289 is close to a multiple of 49 (49*6 = 294)
-    "float n_ = 0.142857142857;", // 1.0/7.0
-    "vec3  ns = n_ * D.wyz - D.xzx;",
-
-    "vec4 j = p - 49.0 * floor(p * ns.z * ns.z);", //  mod(p,7*7)
-
-    "vec4 x_ = floor(j * ns.z);",
-    "vec4 y_ = floor(j - 7.0 * x_);", // mod(j,N)
-
-    "vec4 x = x_ * ns.x + ns.yyyy;",
-    "vec4 y = y_ * ns.x + ns.yyyy;",
-    "vec4 h = 1.0 - abs(x) - abs(y);",
-
-    "vec4 b0 = vec4(x.xy, y.xy);",
-    "vec4 b1 = vec4(x.zw, y.zw);",
-
-    "vec4 s0 = floor(b0) * 2.0 + 1.0;",
-    "vec4 s1 = floor(b1) * 2.0 + 1.0;",
-    "vec4 sh = -step(h, vec4(0.0));",
-
-    "vec4 a0 = b0.xzyw + s0.xzyw * sh.xxyy;",
-    "vec4 a1 = b1.xzyw + s1.xzyw * sh.zzww;",
-
-    "vec3 p0 = vec3(a0.xy, h.x);",
-    "vec3 p1 = vec3(a0.zw, h.y);",
-    "vec3 p2 = vec3(a1.xy, h.z);",
-    "vec3 p3 = vec3(a1.zw, h.w);",
-
-    //Normalise gradients
-    "vec4 norm = taylorInvSqrt(vec4(dot(p0, p0), dot(p1, p1), dot(p2, p2), dot(p3, p3)));",
-    "p0 *= norm.x;",
-    "p1 *= norm.y;",
-    "p2 *= norm.z;",
-    "p3 *= norm.w;",
-
-    // Mix final noise value
-    "vec4 m = max(0.6 - vec4(dot(x0, x0), dot(x1, x1), dot(x2, x2), dot(x3, x3)), 0.0);",
-    "m = m * m;",
-    "return 42.0 * dot(m * m, vec4(dot(p0, x0), dot(p1, x1), dot(p2, x2), dot(p3, x3)));",
-"}",
-
-
 "void main() {",
   "vec2 coords = (gl_PointCoord - 0.5) * mat2(vAngle.x, vAngle.y, -vAngle.y, vAngle.x) + 0.5;",
-  //"coords.x += snoise(vec3(0.25));",
-  //"coords.y += snoise(vec3(0.25));",
   "gl_FragColor = texture2D(diffuseTexture, coords) * vColour;",
 "}",
 ].join("\n");
 
+// Audio Analysis
 
+function fractionate(val, minVal, maxVal) {
+    return (val - minVal)/(maxVal - minVal);
+}
+
+function modulate(val, minVal, maxVal, outMin, outMax) {
+    var fr = fractionate(val, minVal, maxVal);
+    var delta = outMax - outMin;
+    return outMin + (fr * delta);
+}
+
+function avg(arr){
+    var total = arr.reduce(function(sum, b) { return sum + b; });
+    return (total / arr.length);
+}
+
+function max(arr){
+    return arr.reduce(function(a, b){ return Math.max(a, b); })
+}
+
+
+var dataArray;
+var analyser;
+var audio;
+// the main visualiser function
+var vizInit = function (){
+  
+  var file = document.getElementById("thefile");
+  audio = document.getElementById("audio");
+  var fileLabel = document.querySelector("label.file");
+  
+  document.onload = function(e){
+    console.log(e);
+    audio.play();
+    play();
+  }
+  file.onchange = function(){
+    fileLabel.classList.add('normal');
+    audio.classList.add('active');
+    var files = this.files;
+    
+    audio.src = URL.createObjectURL(files[0]);
+    audio.load();
+    audio.play();
+    play();
+    _APP._onAudioChange();
+    // add to number of fires here and start audio analysis
+    //get audio Analysis
+    //console.log(dataArray);
+    //console.log(analyser);
+    //analyser.getByteFrequencyData(dataArray);
+  }
+  
+function play() {
+    var context = new AudioContext();
+    var src = context.createMediaElementSource(audio);
+    analyser = context.createAnalyser();
+    src.connect(analyser);
+    analyser.connect(context.destination);
+    analyser.fftSize = 256;
+    var bufferLength = analyser.frequencyBinCount;
+    dataArray = new Uint8Array(bufferLength);
+    audio.play();
+    };}
+    window.onload = vizInit();
+    
+// Particle Implementation
 class LinearSpline {
   constructor(lerp) {
     this._points = [];
@@ -243,7 +224,7 @@ class ParticleSystem {
     }
   }
 
-  _AddParticles(timeElapsed) {
+  _AddParticles(timeElapsed, rgbcolor, fire_height = 15) {
     if (this._stop) {
       return;
     }
@@ -253,7 +234,10 @@ class ParticleSystem {
     this.gdfsghk += timeElapsed;
     const n = Math.floor(this.gdfsghk * 75.0);
     this.gdfsghk -= n / 75.0;
-
+    if (!audio.paused) {
+        this._colourSpline._points.splice(0, 1, [0.0, rgbcolor]);
+    }
+    //this._colourSpline.AddPoint(0.0, new THREE.Color(0xFFFF80));
     for (let i = 0; i < n; i++) {
       const life = (Math.random() * 0.75 + 0.25);
       this._particles.push({
@@ -267,7 +251,7 @@ class ParticleSystem {
           life: life,
           maxLife: life,
           rotation: Math.random() * 2.0 * Math.PI,
-          velocity: new THREE.Vector3(0, 15, 0),
+          velocity: new THREE.Vector3(0, fire_height, 0),
       });
     }
   }
@@ -343,8 +327,21 @@ class ParticleSystem {
     });
   }
 
-  Step(timeElapsed) {
-    this._AddParticles(timeElapsed);
+  Step(timeElapsed, fire_i = -1) {
+    if (audio.paused || fire_i == -1) {
+        this._AddParticles(timeElapsed, new THREE.Color(0x00FF00), 15);
+    }
+    else {
+        var fireheight = dataArray[fire_i]/2;
+        //var r = fireheight + (25 * (fire_i/dataArray.length));
+        var r = Math.min(250, Math.max(0, fireheight*2 + Math.random() * 100));
+        var g = Math.min(250, Math.max(0, 12 * (fire_i/dataArray.length) + Math.random() * 100));
+        var b = 250;
+        var str_color = "rgb(" + Math.round(r) + ", " + Math.round(g) + ", " + Math.round(b) + ")";
+        var convcolor = new THREE.Color(str_color);
+        //console.log(str_color);
+        this._AddParticles(timeElapsed, convcolor, fireheight);
+    }
     this._UpdateParticles(timeElapsed);
     this._UpdateGeometry();
   }
@@ -375,7 +372,7 @@ class ParticleSystemDemo {
     const near = 1.0;
     const far = 1000.0;
     this._camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-    this._camera.position.set(25, 10, 0);
+    this._camera.position.set(25, 0, 0);
 
     this._scene = new THREE.Scene();
 
@@ -437,6 +434,29 @@ class ParticleSystemDemo {
     this._RAF();
   }
 
+  _onAudioChange() {
+    // get audio analysis
+    analyser.getByteFrequencyData(dataArray);
+    var num_fires = dataArray.length/4;
+    this._fire_list = new Array(num_fires);
+    var max_width = (num_fires-1) * 10;
+    this._camera.position.set(25+num_fires*2.5, 0, 0);
+
+    while(this._scene.children.length > 0){ 
+        this._scene.remove(this._scene.children[0]); 
+    }
+
+    for (var i = 0; i < num_fires; i++) {
+      this._fire_list[i] = new ParticleSystem({
+          parent: this._scene,
+          camera: this._camera,
+          _z_spawn: i * 10 - max_width/2,
+      });
+    }
+
+
+  }
+
   _OnWindowResize() {
     this._camera.aspect = window.innerWidth / window.innerHeight;
     this._camera.updateProjectionMatrix();
@@ -459,9 +479,16 @@ class ParticleSystemDemo {
 
   _Step(timeElapsed) {
     const timeElapsedS = timeElapsed * 0.001;
-
-    for (var i = 0; i < this._fire_list.length; i++) {
-      this._fire_list[i].Step(timeElapsedS); 
+    if (!audio.paused) {
+        analyser.getByteFrequencyData(dataArray);
+        for (var i = 0; i < this._fire_list.length; i++) {
+            this._fire_list[i].Step(timeElapsedS, i);
+        }
+    }
+    else {
+        for (var i = 0; i < this._fire_list.length; i++) {
+            this._fire_list[i].Step(timeElapsedS);
+        }
     }
   }
 }
