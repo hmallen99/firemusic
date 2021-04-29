@@ -437,10 +437,11 @@ class ParticleSystemDemo {
   _onAudioChange() {
     // get audio analysis
     analyser.getByteFrequencyData(dataArray);
-    var num_fires = dataArray.length/4;
+    //var num_fires = dataArray.length/4;
+    var num_fires = 30;
     this._fire_list = new Array(num_fires);
     var max_width = (num_fires-1) * 10;
-    this._camera.position.set(25+num_fires*2.5, 0, 0);
+    this._camera.position.set(25+num_fires*5, 0, 0);
 
     while(this._scene.children.length > 0){ 
         this._scene.remove(this._scene.children[0]); 
