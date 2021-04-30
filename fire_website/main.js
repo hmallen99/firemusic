@@ -114,9 +114,9 @@ class ParticleSystem {
     for (var i = 0; i < num_pressure_points; i++) {
       this._pressure_points[i] = {
           position: new THREE.Vector3(
-                    (Math.random() * 2 - 1) * 1.0,
-                    (Math.random() *2) * 1.0,
-                    (Math.random() * 3 - this._z_spawn) * 1.0),
+                    (Math.random() * 2 - 1)*1.0 ,
+                    (Math.random() *1),
+                    (Math.random() * 2 - 1 - this._z_spawn)),
           size: (Math.random() * 0.5 + 0.5) * 4.0,
           colour: new THREE.Color(),
           alpha: 1.0,
@@ -189,14 +189,14 @@ class ParticleSystem {
     const n = Math.floor(this.gdfsghk * 75.0);
     this.gdfsghk -= n / 75.0;
 
-    for (let i = 0; i < n; i++) {
+    for (let i = 0; i < n*2; i++) {
       const life = (Math.random() * 0.75 + 0.25);
       this._particles.push({
           position: new THREE.Vector3(
               (Math.random() * 2 - 1) * 1.0,
               (Math.random() * 2 - 6) * 1.0,
-              (Math.random() * 3 - this._z_spawn) * 1.0),
-          size: (Math.random() * 0.5 + 0.5) * 4.0,
+              (Math.random() * 2 - 1 - this._z_spawn) * 1.0),
+          size: (Math.random() * 0.5 + 0.5) * 2.0,
           colour: new THREE.Color(),
           alpha: 1.0,
           life: life,
@@ -219,13 +219,6 @@ class ParticleSystem {
       sizes.push(p.currentSize);
       angles.push(p.rotation);
     }
-
-    /*for (let p of this._pressure_points) {
-      positions.push(p.position.x, p.position.y, p.position.z);
-      colours.push(p.colour.r, p.colour.g, p.colour.b, p.alpha);
-      sizes.push(p.currentSize);
-      angles.push(p.rotation);
-    }*/
 
     this._geometry.setAttribute(
         'position', new THREE.Float32BufferAttribute(positions, 3));
@@ -252,9 +245,9 @@ class ParticleSystem {
       if (pressure.life < 0.0) {
         pressure.life = this._pressure_life;
         pressure.position = new THREE.Vector3(
-                    (Math.random() * 2 - 1) * 1.0,
-                    (Math.random() *2) * 1.0,
-                    (Math.random() * 3 - this._z_spawn) * 1.0);
+                            (Math.random() * 2 - 1) ,
+                            (Math.random() *1),
+                            (Math.random() * 2 - 1 -this._z_spawn));
       }
     }
 
@@ -289,19 +282,23 @@ class ParticleSystem {
       var closest_dist = Infinity;
       for (let pressure of this._pressure_points) {
         var dist = p.position.distanceTo(pressure.position);
-        if (dist < closest_dist) {
+        if (dist < closest_dist && pressure.position.y > p.position.y) {
           closest_pressure = pressure;
           closest_dist = dist;
         }
       }
 
-      var pointToPressure = new THREE.Vector3(
+      if (closest_dist < Infinity) {
+        var pointToPressure = new THREE.Vector3(
                               closest_pressure.position.x-p.position.x,
                               closest_pressure.position.y-p.position.y,
                               closest_pressure.position.z-p.position.z)
-      pointToPressure.normalize();
-      pointToPressure.multiplyScalar(0.5);
-      p.velocity.add(pointToPressure);
+        pointToPressure.normalize();
+        pointToPressure.multiplyScalar(0.5);
+        p.velocity.add(pointToPressure);
+      }
+
+      
     }
 
     this._particles.sort((a, b) => {
