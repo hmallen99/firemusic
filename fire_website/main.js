@@ -250,7 +250,7 @@ class ParticleSystem {
       this.gdfsghk = 0.0;
     }
     this.gdfsghk += timeElapsed;
-    const n = Math.floor(this.gdfsghk * 75.0);
+    const n = Math.floor(this.gdfsghk * 75.0) * 2;
     this.gdfsghk -= n / 75.0;
     if (!audio.paused) {
         this._colourSpline._points.splice(0, 1, [0.0, rgbcolor]);
@@ -507,8 +507,8 @@ class EmberSystem {
           position: new THREE.Vector3(
               (Math.random() * 2 - 1) * 1.0,
               (Math.random() * 2 - 6) * 1.0,
-              (Math.random() * 2 - this._z_spawn) * 1.0),
-          size: (Math.random() * 0.5 + 0.5) * 4.0,
+              (Math.random() * 2 - 1 - this._z_spawn) * 1.0),
+          size: (Math.random() * 0.5 + 0.5) * 2.0,
           colour: new THREE.Color(),
           alpha: 1.0,
           life: life,
