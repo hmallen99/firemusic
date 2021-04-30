@@ -24,7 +24,6 @@ void main() {
   vColour = colour;
 }`;
 
-
 const _FS = [
 
 "uniform sampler2D diffuseTexture;",
@@ -139,7 +138,6 @@ class LinearSpline {
 }
 
 
-
 class ParticleSystem {
   constructor(params) {
     const uniforms = {
@@ -176,6 +174,25 @@ class ParticleSystem {
     params.parent.add(this._points);
 
     this._z_spawn = params._z_spawn;
+
+    var num_pressure_points = 5;
+    this._pressure_points = new Array(num_pressure_points);
+    this._pressure_life = 2;
+    for (var i = 0; i < num_pressure_points; i++) {
+      this._pressure_points[i] = {
+          position: new THREE.Vector3(
+                    (Math.random() * 2 - 1)*1.0 ,
+                    (Math.random() *1),
+                    (Math.random() * 2 - 1 - this._z_spawn)),
+          size: (Math.random() * 0.5 + 0.5) * 4.0,
+          colour: new THREE.Color(),
+          alpha: 1.0,
+          life: this._pressure_life,
+          maxLife: this._pressure_life,
+          rotation: Math.random() * 2.0 * Math.PI,
+          velocity: new THREE.Vector3(0, 0, 0),
+      }
+    }
 
     this._alphaSpline = new LinearSpline((t, a, b) => {
       return a + t * (b - a);
@@ -245,8 +262,8 @@ class ParticleSystem {
           position: new THREE.Vector3(
               (Math.random() * 2 - 1) * 1.0,
               (Math.random() * 2 - 6) * 1.0,
-              (Math.random() * 2 - this._z_spawn) * 1.0),
-          size: (Math.random() * 0.5 + 0.5) * 4.0,
+              (Math.random() * 2 - 1 - this._z_spawn) * 1.0),
+          size: (Math.random() * 0.5 + 0.5) * 2.0,
           colour: new THREE.Color(),
           alpha: 1.0,
           life: life,
@@ -294,6 +311,17 @@ class ParticleSystem {
       return p.life > 0.0;
     });
 
+    for (let pressure of this._pressure_points) {
+      pressure.life -= timeElapsed;
+      if (pressure.life < 0.0) {
+        pressure.life = this._pressure_life;
+        pressure.position = new THREE.Vector3(
+                            (Math.random() * 2 - 1) ,
+                            (Math.random() *1),
+                            (Math.random() * 2 - 1 -this._z_spawn));
+      }
+    }
+
     for (let p of this._particles) {
       const t = 1.0 - p.life / p.maxLife;
 
@@ -305,11 +333,35 @@ class ParticleSystem {
       p.position.add(p.velocity.clone().multiplyScalar(timeElapsed));
 
       const drag = p.velocity.clone();
-      drag.multiplyScalar(timeElapsed * 0.1);
+      drag.multiplyScalar(timeElapsed * 0.3);
       drag.x = Math.sign(p.velocity.x) * Math.min(Math.abs(drag.x), Math.abs(p.velocity.x));
-      drag.y = Math.sign(p.velocity.y) * Math.min(Math.abs(drag.y), Math.abs(p.velocity.y));
+      //drag.y = Math.sign(p.velocity.y) * Math.min(Math.abs(drag.y), Math.abs(p.velocity.y));
       drag.z = Math.sign(p.velocity.z) * Math.min(Math.abs(drag.z), Math.abs(p.velocity.z));
+
+      //const gravity = new THREE.Vector3(0, 0.1, 0);
       p.velocity.sub(drag);
+      //p.velocity.sub(gravity);
+
+      // Evaluate Pressure points
+      var closest_pressure;
+      var closest_dist = Infinity;
+      for (let pressure of this._pressure_points) {
+        var dist = p.position.distanceTo(pressure.position);
+        if (dist < closest_dist && pressure.position.y > p.position.y) {
+          closest_pressure = pressure;
+          closest_dist = dist;
+        }
+      }
+
+      if (closest_dist < Infinity) {
+        var pointToPressure = new THREE.Vector3(
+                              closest_pressure.position.x-p.position.x,
+                              closest_pressure.position.y-p.position.y,
+                              closest_pressure.position.z-p.position.z)
+        pointToPressure.normalize();
+        pointToPressure.multiplyScalar(0.5);
+        p.velocity.add(pointToPressure);
+      }
     }
 
     this._particles.sort((a, b) => {
@@ -721,7 +773,7 @@ class ParticleSystemDemo {
     }
     else {
         for (var i = 0; i < this._fire_list.length; i++) {
-            this._fire_list[i].Step(timeElapsedS);
+          this._fire_list[i].Step(timeElapsedS);
         }
         for (var i = 0; i < this._ember_list.length; i++) {
           this._ember_list[i].Step(timeElapsedS, t); 
