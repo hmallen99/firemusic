@@ -385,10 +385,16 @@ class ParticleSystem {
         this._AddParticles(timeElapsed, new THREE.Color(0x00FF00), 15);
     }
     else {
-        var fireheight = dataArray[fire_i]/2;
+        // Currently, there are 30 fires and len dataArray = 128
+        // Used an exponential equation so we reach all frequencies
+        // while concentrating on lower ones (higher ones aren't all that exciting)
+        var buffer_index = Math.round(Math.exp(4.8*fire_i/30));
+        var freq_value = dataArray[buffer_index];
+        var fireheight = Math.max(dataArray[buffer_index]/2, + Math.random()*5, 0);
+        
         //var r = fireheight + (25 * (fire_i/dataArray.length));
-        var r = Math.min(250, Math.max(0, fireheight*2 + Math.random() * 100));
-        var g = Math.min(250, Math.max(0, 12 * (fire_i/dataArray.length) + Math.random() * 100));
+        var r = Math.min(250, Math.max(0, freq_value + Math.random() * 10));
+        var g = Math.min(250, Math.max(0, 12 * (buffer_index/dataArray.length) + Math.random() * 100));
         var b = 250;
         var str_color = "rgb(" + Math.round(r) + ", " + Math.round(g) + ", " + Math.round(b) + ")";
         var convcolor = new THREE.Color(str_color);
@@ -710,6 +716,9 @@ class ParticleSystemDemo {
     // get audio analysis
     analyser.getByteFrequencyData(dataArray);
     //var num_fires = dataArray.length/4;
+    // dataArray.length = 128
+    // dataArray[i] = i * sample_rate / fftsize
+    // fft size = 128*2
     var num_fires = 30;
     this._fire_list = new Array(num_fires);
     var max_width = (num_fires-1) * 10;
