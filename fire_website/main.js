@@ -257,7 +257,10 @@ class ParticleSystem {
     }
     //this._colourSpline.AddPoint(0.0, new THREE.Color(0xFFFF80));
     for (let i = 0; i < n; i++) {
-      const life = (Math.random() * 0.75 + 0.25);
+      //const life = (Math.random() * 0.75 + 0.25);
+      // fire_height between 0, 127
+      // for 15, this is what is optimal
+      const life = fire_height / 20 ;//- Math.random() * 0.5;
       this._particles.push({
           position: new THREE.Vector3(
               (Math.random() * 2 - 1) * 1.0,
@@ -390,8 +393,11 @@ class ParticleSystem {
         // while concentrating on lower ones (higher ones aren't all that exciting)
         var buffer_index = Math.round(Math.exp(4.8*fire_i/30));
         var freq_value = dataArray[buffer_index];
-        var fireheight = Math.max(dataArray[buffer_index]/2, + Math.random()*5, 0);
+        //var fireheight = Math.max(dataArray[buffer_index]/2, + Math.random()*5, 0);
+        // Range of fireheight is from 0 to 255
+        var fireheight = Math.max(Math.exp(0.0162 * dataArray[buffer_index])*4 + Math.random() * 5, 15);
         
+
         //var r = fireheight + (25 * (fire_i/dataArray.length));
         var r = Math.min(250, Math.max(0, freq_value + Math.random() * 10));
         var g = Math.min(250, Math.max(0, 12 * (buffer_index/dataArray.length) + Math.random() * 100));
@@ -399,7 +405,7 @@ class ParticleSystem {
         var str_color = "rgb(" + Math.round(r) + ", " + Math.round(g) + ", " + Math.round(b) + ")";
         var convcolor = new THREE.Color(str_color);
         //console.log(str_color);
-        this._AddParticles(timeElapsed, convcolor, fireheight);
+        this._AddParticles(timeElapsed, convcolor, fireheight/8);
     }
     this._UpdateParticles(timeElapsed);
     this._UpdateGeometry();
@@ -507,7 +513,8 @@ class EmberSystem {
     }
     //embers
     for (let i = 0; i < n; i++) {
-      const life = (Math.random() + 0.5);
+      //const life = (Math.random() + 0.5);
+      const life = fire_height / 20 ;
       //const life = 1.5;
       this._particles.push({
           position: new THREE.Vector3(
@@ -603,15 +610,37 @@ class EmberSystem {
     if (audio.paused || fire_i == -1) {
       this._AddParticles(timeElapsed, new THREE.Color(0x00FF00), 10);
     } else {
-      var fireheight = dataArray[fire_i]/4;
-        //var r = fireheight + (25 * (fire_i/dataArray.length));
-        var r = Math.min(250, Math.max(0, fireheight*2 + Math.random() * 100));
-        var g = Math.min(250, Math.max(0, 12 * (fire_i/dataArray.length) + Math.random() * 100));
-        var b = 250;
+        // Currently, there are 30 fires and len dataArray = 128
+        // Used an exponential equation so we reach all frequencies
+        // while concentrating on lower ones (higher ones aren't all that exciting)
+        var buffer_index = Math.round(Math.exp(4.8*fire_i/30));
+        var freq_value = dataArray[buffer_index];
+
+        //var fireheight = Math.max(dataArray[buffer_index]/2, + Math.random()*5, 0);
+        // Range of fireheight is from 0 to 255
+        var fireheight = Math.max(Math.exp(0.0162 * dataArray[buffer_index])*4 + Math.random() * 5, 15);
+        
+        // Baseline RGB values range from 60 to 160
+        var r = Math.random() * 100 + 60;
+        var g = Math.random() * 100 + 60;
+        var b = Math.random() * 100 + 60;
+        if (freq_value < 70) {
+          // Low frequency -> blue
+          b += Math.random() * 20 + 70;
+        } else if (freq_value > 150) {
+          // High frequency -> red
+          r += Math.random() * 20 + 70;
+        } else {
+          // Medium frequency -> green
+          g += Math.random() * 20 + 70;
+        }
+        //var r = Math.min(250, Math.max(0, freq_value + Math.random() * 10));
+        //var g = Math.min(250, Math.max(0, 12 * (buffer_index/dataArray.length) + Math.random() * 100));
+        //var b = 250;
         var str_color = "rgb(" + Math.round(r) + ", " + Math.round(g) + ", " + Math.round(b) + ")";
         var convcolor = new THREE.Color(str_color);
         //console.log(str_color);
-        this._AddParticles(timeElapsed, convcolor, fireheight);
+        this._AddParticles(timeElapsed, convcolor, fireheight/8);
     }
     this._UpdateParticles(timeElapsed);
     this._UpdateGeometry();
