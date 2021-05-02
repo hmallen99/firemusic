@@ -1,9 +1,6 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.127/build/three.module.js';
 
-import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.127/examples/jsm/controls/OrbitControls.js';
-import { WEBGL } from 'https://cdn.jsdelivr.net/npm/three@0.127/examples/jsm/WebGL.js';
 import { GPUComputationRenderer } from 'https://cdn.jsdelivr.net/npm/three@0.127/examples/jsm/misc/GPUComputationRenderer.js';
-import { ImprovedNoise } from 'https://cdn.jsdelivr.net/npm/three@0.127/examples/jsm/math/ImprovedNoise.js';
 
 const WIDTH = 64;
 
@@ -74,7 +71,7 @@ class SmokeSystem {
         // Initialize the smoke GLSL shaders
         this.gpuCompute = new GPUComputationRenderer(WIDTH * WIDTH, WIDTH, this.renderer);
         
-    
+        // Initialize Textures
         var divergenceMap = this.gpuCompute.createTexture();
         var pressureMap = this.gpuCompute.createTexture();
         var velocityMap = this.gpuCompute.createTexture();
@@ -156,24 +153,25 @@ class SmokeSystem {
     update() {
         // Updates the shaders
         // Call this in _RAF
+
+        // Set render targets to outputs of dependencies
         this.advectUniforms["temperatureSampler"].value = this.gpuCompute.getAlternateRenderTarget(this.temperatureVariable).texture;
-      
         this.divergenceUniforms["velocitySampler"].value = this.gpuCompute.getAlternateRenderTarget(this.advectVariable).texture;
-    
         this.jacobiUniforms["velocitySampler"].value = this.gpuCompute.getAlternateRenderTarget(this.advectVariable).texture;
         this.jacobiUniforms["divergenceSampler"].value = this.gpuCompute.getAlternateRenderTarget(this.divergenceVariable).texture;
-    
         this.outputUniforms["velocitySampler"].value = this.gpuCompute.getAlternateRenderTarget(this.advectVariable).texture;
         this.outputUniforms["pressureSampler"].value = this.gpuCompute.getAlternateRenderTarget(this.jacobiVariable).texture;
     
-        
+        // Do computation
         this.gpuCompute.compute();
+
+        // Update Material Parameters
         this.boxMaterial.uniforms.map.value = this.gpuCompute.getCurrentRenderTarget(this.advectVariable).texture;
         this.altBoxMaterial.uniforms.map.value = this.gpuCompute.getAlternateRenderTarget(this.advectVariable).texture;
-    
         this.boxMesh.material.uniforms.cameraPos.value.copy(this.camera.position);
         this.altBoxMesh.material.uniforms.cameraPos.value.copy(this.camera.position);
     }
 }
 
 
+export {SmokeSystem as default};
