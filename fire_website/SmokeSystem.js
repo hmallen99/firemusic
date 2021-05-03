@@ -5,15 +5,12 @@ import { GPUComputationRenderer } from 'https://cdn.jsdelivr.net/npm/three@0.127
 const WIDTH = 64;
 
 class SmokeSystem {
-    cosntructor(params) {
+    constructor(params) {
         this.scene = params.scene;
         this.camera = params.camera;
         this.renderer = params.renderer;
+        this._z_spawn = params._z_spawn;
         
-        this._init();
-    }
-
-    _init() {
         this._init_box();
         this._init_smoke_shader();
     }
@@ -36,6 +33,7 @@ class SmokeSystem {
     _init_box() {
         // Initialize the smoke box
         const boxGeometry = new THREE.BoxGeometry(2, 2, 2);
+        
     
         this.boxMaterial = new THREE.RawShaderMaterial({
             glslVersion: THREE.GLSL3,
@@ -61,10 +59,27 @@ class SmokeSystem {
             fragmentShader: document.getElementById('boxFragmentShader').textContent
         });
     
-        this.boxMesh = new THREE.Mesh(boxGeometry, boxMaterial);
-        this.altBoxMesh = new THREE.Mesh(boxGeometry, altBoxMaterial);
-        this.scene.add(boxMesh);
-        this.scene.add(altBoxMesh);
+        this.boxMesh = new THREE.Mesh(boxGeometry, this.boxMaterial);
+        this.altBoxMesh = new THREE.Mesh(boxGeometry, this.altBoxMaterial);
+
+        this.boxMesh.position.x = 0;
+        this.boxMesh.position.y = 0;
+        this.boxMesh.position.z = this._z_spawn;
+
+        this.boxMesh.scale.x = 5.0;
+        this.boxMesh.scale.y = 10.0;
+        this.boxMesh.scale.z = 5.0;
+
+        this.altBoxMesh.position.x = 0;
+        this.altBoxMesh.position.y = 0;
+        this.altBoxMesh.position.z = this._z_spawn;
+
+        this.altBoxMesh.scale.x = 5.0;
+        this.altBoxMesh.scale.y = 10.0;
+        this.altBoxMesh.scale.z = 5.0;
+
+        this.scene.add(this.boxMesh);
+        this.scene.add(this.altBoxMesh);
     }
 
     _init_smoke_shader() {
@@ -87,7 +102,7 @@ class SmokeSystem {
         var blockRes = new THREE.Vector3(WIDTH, WIDTH, WIDTH);
     
         // Initialize Temperature Advection Shader
-        this.temperatureVariable = gpuCompute.addVariable("temperatureSampler", document.getElementById("temperatureShader").textContent, temperatureMap);
+        this.temperatureVariable = this.gpuCompute.addVariable("temperatureSampler", document.getElementById("temperatureShader").textContent, temperatureMap);
         this.temperatureUniforms = this.temperatureVariable.material.uniforms;
         this.temperatureUniforms["timestep"] = {value: 0.03};
         this.temperatureUniforms["blockRes"] = {value: blockRes};
@@ -118,7 +133,7 @@ class SmokeSystem {
         this.divergenceVariable.magFilter = THREE.LinearFilter;
     
         // Initialize Jacobi Pressure Shader
-        this.jacobiVariable = gpuCompute.addVariable("pressureSampler", document.getElementById("jacobiShader").textContent, pressureMap);
+        this.jacobiVariable = this.gpuCompute.addVariable("pressureSampler", document.getElementById("jacobiShader").textContent, pressureMap);
         this.gpuCompute.setVariableDependencies(this.jacobiVariable, [this.jacobiVariable]);
         this.jacobiUniforms = this.jacobiVariable.material.uniforms;
         this.jacobiUniforms["velocitySampler"] = {value: null};

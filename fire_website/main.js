@@ -1,7 +1,8 @@
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.118/build/three.module.js';
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.127/build/three.module.js';
 
 import {GLTFLoader} from 'https://cdn.jsdelivr.net/npm/three@0.118.1/examples/jsm/loaders/GLTFLoader.js';
-import {OrbitControls} from 'https://cdn.jsdelivr.net/npm/three@0.118/examples/jsm/controls/OrbitControls.js';
+import {OrbitControls} from 'https://cdn.jsdelivr.net/npm/three@0.127/examples/jsm/controls/OrbitControls.js';
+import SmokeSystem from './SmokeSystem.js';
 
 
 const _VS = `
@@ -708,6 +709,16 @@ class ParticleSystemDemo {
       });
     }
 
+    this._smoke_list = new Array(num_fires);
+    for (var i = 0; i < num_fires; i++) {
+        this._smoke_list[i] = new SmokeSystem({
+            scene: this._scene,
+            camera: this._camera,
+            renderer: this._threejs,
+            _z_spawn: i * 10 - max_width/2,
+        });
+    }
+
     this._previousRAF = null;
     this._RAF();
   }
@@ -762,11 +773,17 @@ class ParticleSystemDemo {
       }
 
       this._RAF();
-
+      this._UpdateSmokes();
       this._threejs.render(this._scene, this._camera);
       this._Step(t - this._previousRAF, t);
       this._previousRAF = t;
     });
+  }
+
+  _UpdateSmokes(){
+    for (var i = 0; i < this._smoke_list.length; i++) {
+        this._smoke_list[i].update();
+    }
   }
 
   _Step(timeElapsed, t) {
