@@ -4,18 +4,20 @@
   <title>Basic 3D World</title>
   <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
   <link rel="stylesheet" type="text/css" href="base.css">
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
 </head>
 <body>
-	<div id="content">
+	<p style="color: white; font-size: 38px; font-family: 'Poppins', sans-serif; position: absolute; left:45%;"><b>FireMusic</b></p>
+	<div id="content" style="position: absolute; bottom: 5%; left:25%;"><center>
     
-    <label for="thefile" class="file" style="color:white;"> Choose an audio file
-      <input type="file" id="thefile" accept="audio/*" />
+    <label for="thefile" class="file" style="color:white; font-family: 'Poppins', sans-serif;"> Choose an audio file
+      <input style="font-family: 'Poppins', sans-serif;" type="file" id="thefile" accept="audio/*" />
     </label>
 
-    <audio id="audio" controls></audio>
-    <div id="out"></div>
+    <audio style="font-family: 'Poppins', sans-serif;" id="audio" controls></audio>
+    <div id="out"></div></center>
   </div>
-	<script src="./main.js" type="module">
-  </script>
+	<script src="./main.js" type="module"></script>
 </body>
 </html>
