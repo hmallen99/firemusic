@@ -15,7 +15,7 @@ class SmokeSystem {
         this._init_smoke_shader();
     }
 
-    _fillTexture(texture, texValue) {
+    _fillTexture(texture, texValue, random_offset) {
         // Fills a texture with texValue
         const pixels = texture.image.data;
         var p = 0;
@@ -41,10 +41,13 @@ class SmokeSystem {
                 map: {value: null},
                 cameraPos: {value: new THREE.Vector3()},
                 threshold: {value: 0.6},
-                steps: {value: 200}
+                steps: {value: 200},
+                reactionSampler: {value: null},
+                
             },
             vertexShader: document.getElementById('boxVertexShader').textContent,
-            fragmentShader: document.getElementById('boxFragmentShader').textContent
+            fragmentShader: document.getElementById('boxFragmentShader').textContent,
+            blending: THREE.AdditiveBlending,
         });
     
         this.altBoxMaterial = new THREE.RawShaderMaterial({
@@ -53,10 +56,13 @@ class SmokeSystem {
                 map: {value: null},
                 cameraPos: {value: new THREE.Vector3()},
                 threshold: {value: 0.6},
-                steps: {value: 200}
+                steps: {value: 200},
+                reactionSampler: {value: null},
+                
             },
             vertexShader: document.getElementById('boxVertexShader').textContent,
-            fragmentShader: document.getElementById('boxFragmentShader').textContent
+            fragmentShader: document.getElementById('boxFragmentShader').textContent,
+            blending: THREE.AdditiveBlending,
         });
     
         this.boxMesh = new THREE.Mesh(boxGeometry, this.boxMaterial);
@@ -92,32 +98,46 @@ class SmokeSystem {
         var velocityMap = this.gpuCompute.createTexture();
         var outputMap = this.gpuCompute.createTexture();
         var temperatureMap = this.gpuCompute.createTexture();
+        var reactionMap = this.gpuCompute.createTexture();
     
         this._fillTexture(divergenceMap, 0.0);
         this._fillTexture(pressureMap, 0.0);
         this._fillTexture(velocityMap, 0.0);
         this._fillTexture(outputMap, 0.0);
         this._fillTexture(temperatureMap, 60.0);
+        this._fillTexture(reactionMap, 0.0);
         
         var blockRes = new THREE.Vector3(WIDTH, WIDTH, WIDTH);
     
         // Initialize Temperature Advection Shader
         this.temperatureVariable = this.gpuCompute.addVariable("temperatureSampler", document.getElementById("temperatureShader").textContent, temperatureMap);
         this.temperatureUniforms = this.temperatureVariable.material.uniforms;
-        this.temperatureUniforms["timestep"] = {value: 0.03};
+        this.temperatureUniforms["timestep"] = {value: 0.1};
         this.temperatureUniforms["blockRes"] = {value: blockRes};
         this.temperatureVariable.minFilter = THREE.LinearFilter;
         this.temperatureVariable.magFilter = THREE.LinearFilter;
         this.gpuCompute.addResolutionDefine(this.temperatureVariable.material);
     
+
+        // Initialize Reaction Advection Shader
+        this.reactionVariable = this.gpuCompute.addVariable("reactionSampler", document.getElementById("reactionShader").textContent, reactionMap);
+        this.reactionUniforms = this.reactionVariable.material.uniforms;
+        this.reactionUniforms["timestep"] = {value: 0.1};
+        this.reactionUniforms["blockRes"] = {value: blockRes};
+        this.reactionUniforms["k"] = {value: 0.05};
+        this.reactionVariable.minFilter = THREE.LinearFilter;
+        this.reactionVariable.magFilter = THREE.LinearFilter;
+        this.gpuCompute.addResolutionDefine(this.reactionVariable.material);
+
         // Initialize Velocity Advection Shader
         this.advectVariable = this.gpuCompute.addVariable("velocitySampler", document.getElementById("advectShader").textContent, velocityMap);
         this.advectUniforms = this.advectVariable.material.uniforms;
-        this.advectUniforms["timestep"] = {value: 0.03};
-        this.advectUniforms["b"] = {value: 0.5};
+        this.advectUniforms["timestep"] = {value: 0.1};
+        this.advectUniforms["b"] = {value: -10};
         this.advectUniforms["inv_T_zero"] = {value: 1.0 / 60.0};
         this.advectUniforms["temperatureSampler"] = {value: null};
         this.advectUniforms["blockRes"] = {value: blockRes};
+        this.advectUniforms["velocityOffset"] = {value: new THREE.Vector3(0.0, 0.0, 0.0)};
         this.gpuCompute.addResolutionDefine(this.advectVariable.material);
         this.advectVariable.minFilter = THREE.LinearFilter;
         this.advectVariable.magFilter = THREE.LinearFilter;
@@ -156,6 +176,7 @@ class SmokeSystem {
     
         this.gpuCompute.setVariableDependencies(this.temperatureVariable, [this.temperatureVariable, this.outputVariable]);
         this.gpuCompute.setVariableDependencies(this.advectVariable, [this.advectVariable, this.outputVariable]);
+        this.gpuCompute.setVariableDependencies(this.reactionVariable, [this.reactionVariable, this.outputVariable]);
     
     
         // Initialize the gpu shader thingy
@@ -171,6 +192,7 @@ class SmokeSystem {
 
         // Set render targets to outputs of dependencies
         this.advectUniforms["temperatureSampler"].value = this.gpuCompute.getAlternateRenderTarget(this.temperatureVariable).texture;
+        this.advectUniforms["velocityOffset"].value = new THREE.Vector3(Math.random() * 10 - 5, Math.random() * 10 - 5, Math.random() * 10 - 5);
         this.divergenceUniforms["velocitySampler"].value = this.gpuCompute.getAlternateRenderTarget(this.advectVariable).texture;
         this.jacobiUniforms["velocitySampler"].value = this.gpuCompute.getAlternateRenderTarget(this.advectVariable).texture;
         this.jacobiUniforms["divergenceSampler"].value = this.gpuCompute.getAlternateRenderTarget(this.divergenceVariable).texture;
@@ -183,6 +205,8 @@ class SmokeSystem {
         // Update Material Parameters
         this.boxMaterial.uniforms.map.value = this.gpuCompute.getCurrentRenderTarget(this.advectVariable).texture;
         this.altBoxMaterial.uniforms.map.value = this.gpuCompute.getAlternateRenderTarget(this.advectVariable).texture;
+        this.boxMaterial.uniforms.reactionSampler.value = this.gpuCompute.getCurrentRenderTarget(this.reactionVariable).texture;
+        this.altBoxMaterial.uniforms.reactionSampler.value = this.gpuCompute.getAlternateRenderTarget(this.reactionVariable).texture;
         this.boxMesh.material.uniforms.cameraPos.value.copy(this.camera.position);
         this.altBoxMesh.material.uniforms.cameraPos.value.copy(this.camera.position);
     }

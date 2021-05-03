@@ -690,9 +690,9 @@ class ParticleSystemDemo {
     this._scene.background = texture;
 
     var num_fires = 5;
-    this._fire_list = new Array(num_fires);
+    //this._fire_list = new Array(num_fires);
     var max_width = (num_fires-1) * 10;
-    for (var i = 0; i < num_fires; i++) {
+    /*for (var i = 0; i < num_fires; i++) {
       this._fire_list[i] = new ParticleSystem({
           parent: this._scene,
           camera: this._camera,
@@ -707,7 +707,7 @@ class ParticleSystemDemo {
           camera: this._camera,
           _z_spawn: i * 10 - max_width/2,
       });
-    }
+    }*/
 
     this._smoke_list = new Array(num_fires);
     for (var i = 0; i < num_fires; i++) {
@@ -720,7 +720,8 @@ class ParticleSystemDemo {
     }
 
     this._previousRAF = null;
-    this._RAF();
+    //this._RAF();
+    this._RAF_smokes();
   }
 
   _onAudioChange() {
@@ -773,9 +774,21 @@ class ParticleSystemDemo {
       }
 
       this._RAF();
-      this._UpdateSmokes();
       this._threejs.render(this._scene, this._camera);
       this._Step(t - this._previousRAF, t);
+      this._previousRAF = t;
+    });
+  }
+
+  _RAF_smokes() {
+    requestAnimationFrame((t) => {
+      if (this._previousRAF === null) {
+        this._previousRAF = t;
+      }
+
+      this._RAF_smokes();
+      this._UpdateSmokes();
+      this._threejs.render(this._scene, this._camera);
       this._previousRAF = t;
     });
   }

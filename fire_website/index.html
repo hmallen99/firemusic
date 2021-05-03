@@ -39,6 +39,7 @@
         out vec4 color;
 
         uniform sampler2D map;
+        uniform sampler2D reactionSampler;
         uniform float threshold;
         uniform float steps;
 
@@ -77,6 +78,11 @@
             }
             return vec4(texColor.rgb * 0.002, 0.0);
         }
+
+        float sampleReaction(vec3 p) {
+            vec4 texColor = getTex3D( reactionSampler, p );
+            return texColor.r;
+        }
         
         void main(){
             vec3 rayDir = normalize( vDirection );
@@ -87,20 +93,28 @@
             vec3 inc = 1.0 / abs( rayDir );
             float delta = min( inc.x, min( inc.y, inc.z ) );
             delta /= steps;
+            float count = 0.0;
             for ( float t = bounds.x; t < bounds.y; t += delta ) {
                 vec4 d = sample4(p + 0.5);
+                count += 1.0;
+                float reaction = sampleReaction(p + 0.5);
                 if (d.w > 0.0) {
                     color.rgb = max(color.rgb, vec3(0.4));
-                    color.a = 1.;
+                    color.a = 1.0;
                     break;
                 }
-                color.rgb += vec3(length(d.rgb));
-                color.a = 1.;
-                if ( length(color.rgb) >  1.0) {
+                float red_val = length(d.rgb) * reaction;
+                //float red_val = reaction;
+                color.rgb += vec3(red_val, red_val / 2.0, red_val / 4.0);
+                color.a += reaction * 2.0;
+                
+                if ( length(color.b) >  1.0) {
                     break;
                 }
                 p += rayDir * delta;
             }
+            color.a /= count;
+            //color.rgb /= count;
             if ( color.a == 0.0 ) discard;
         }
     </script>
@@ -108,6 +122,7 @@
     <script id="advectShader", type="x-shader/x-fragment">
         uniform float timestep;
         uniform sampler2D temperatureSampler;
+        uniform vec3 velocityOffset;
 
         uniform float b; // represents the buoyancy constant
         uniform float inv_T_zero; // inverse of T_0, the ambient room temperature.
@@ -116,8 +131,10 @@
         const vec3 Force = vec3(0.0, 100.0, 0.0);
         const vec3 ForceAreaMin = vec3(0.4, 0.0, 0.4);
         const vec3 ForceAreaMax = vec3(0.6, 0.06, 0.6);
+        const vec3 ForceAreaCenter = vec3(0.5, 0.1, 0.5);
+        const float ForceRadiusSq = 0.01;
 
-        const vec3 BarrierPosition = vec3(0.5, 0.2, 0.5);
+        const vec3 BarrierPosition = vec3(1.5, 0.2, 1.5);
         const float BarrierRadiusSq = 0.01;
 
         vec4 getTex3D(sampler2D map, vec3 uvw) {
@@ -139,8 +156,8 @@
             return vec3(x_coord, xy.y, floor(xy.x / blockRes.x));
         }
 
-        vec3 buoyancyForce(vec2 pos) {
-            float temperature = texture2D(temperatureSampler, pos).x;
+        vec3 buoyancyForce(vec3 pos) {
+            float temperature = getTex3D(temperatureSampler, pos).x;
             if (temperature == 0.0) {
                 return vec3(0.0);
             }
@@ -159,15 +176,14 @@
             vec3 uvwOld = uvw - oldVelocity * timestep * invBlockRes;
             vec3 outputVelocity = getTex3D(velocityOutputSampler, uvwOld).xyz;
 
-            if (uvw.x > ForceAreaMin.x && uvw.x < ForceAreaMax.x && 
-                uvw.y > ForceAreaMin.y && uvw.y < ForceAreaMax.y &&
-                uvw.z > ForceAreaMin.z && uvw.z < ForceAreaMax.z
-            ) 
+            vec3 toCenter = ForceAreaCenter - uvw;
+
+            if (dot(toCenter, toCenter) < ForceRadiusSq) 
             {
-                outputVelocity += Force * timestep;
+                outputVelocity += (Force + velocityOffset) * timestep;
             }
 
-            outputVelocity += buoyancyForce(uv);
+            outputVelocity += buoyancyForce(uvw);
 
             if (uvw.x > 1.0 - invBlockRes.x || uvw.x < invBlockRes.x ||
                 uvw.y > 1.0 - invBlockRes.y || uvw.y < invBlockRes.y ||
@@ -195,6 +211,8 @@
         uniform vec3 blockRes;
         const vec3 HeatAreaMin = vec3(0.4, 0.0, 0.4);
         const vec3 HeatAreaMax = vec3(0.6, 0.06, 0.6);
+        const vec3 HeatAreaCenter = vec3(0.5, 0.1, 0.5);
+        const float HeatRadiusSq = 0.01;
 
         float HeatAreaTemp = 100.0;
 
@@ -230,10 +248,8 @@
             vec3 uvwOld = uvw - oldVelocity * timestep * invBlockRes;
             float temperature = getTex3D(temperatureSampler, uvwOld).x;
 
-            if (uvw.x > HeatAreaMin.x && uvw.x < HeatAreaMax.x && 
-                uvw.y > HeatAreaMin.y && uvw.y < HeatAreaMax.y &&
-                uvw.z > HeatAreaMin.y && uvw.z < HeatAreaMax.y
-            ) 
+            vec3 toCenter = uvw.xyz - HeatAreaCenter;
+            if (dot(toCenter, toCenter) < HeatRadiusSq) 
             {
                 temperature = HeatAreaTemp;
             }
@@ -241,6 +257,60 @@
             gl_FragColor = vec4(temperature);
         }
 
+    </script>
+
+    <script id="reactionShader", type="x-shader/x-fragment">
+        uniform float timestep;
+        uniform float k;
+
+        uniform vec3 blockRes;
+        const vec3 HeatAreaMin = vec3(0.4, 0.0, 0.4);
+        const vec3 HeatAreaMax = vec3(0.6, 0.06, 0.6);
+        const vec3 HeatAreaCenter = vec3(0.5, 0.1, 0.5);
+        const float HeatRadiusSq = 0.01;
+
+        float HeatAreaReaction = 1.0;
+
+        vec4 getTex3D(sampler2D map, vec3 uvw) {
+            vec3 xyz = uvw * blockRes;
+            vec2 invRes = vec2(1.0, 1.0) / resolution.xy;
+            float z_part = xyz.z - mod(xyz.z, 1.0);
+            vec2 uv1 = vec2(xyz.x + z_part * blockRes.x , xyz.y) * invRes;
+            vec4 color1 = texture2D(map, uv1);
+        
+            vec2 uv2 = vec2(xyz.x + (z_part + 1.0) * blockRes.x, xyz.y) * invRes;
+            vec4 color2 = texture2D(map, uv2);
+        
+            float t = xyz.z - floor(xyz.z);
+            return (1.0 - t) * color1 + t * color2;
+        }
+
+        vec3 getXYZ(vec2 xy) {
+            float x_coord = xy.x - floor(xy.x / blockRes.x) * blockRes.x;
+            return vec3(x_coord, xy.y, floor(xy.x / blockRes.x));
+        }
+
+
+        void main() {
+            vec2 invRes = vec2(1.0, 1.0) / resolution.xy;
+            vec2 uv = gl_FragCoord.xy * invRes;
+
+            vec3 invBlockRes = vec3(1.0, 1.0, 1.0) / blockRes;
+            vec3 xyz = getXYZ(gl_FragCoord.xy);
+            vec3 uvw = xyz / blockRes;
+
+            vec3 oldVelocity = texture2D(velocityOutputSampler, uv).xyz;
+            vec3 uvwOld = uvw - oldVelocity * timestep * invBlockRes;
+            float reaction = max(getTex3D(reactionSampler, uvwOld).x - k, 0.0);
+
+            vec3 toCenter = uvw - HeatAreaCenter;
+            if (dot(toCenter, toCenter) < HeatRadiusSq) 
+            {
+                reaction = 1.0;
+            }
+
+            gl_FragColor = vec4(reaction);
+        }
     </script>
 
     <script id="divergenceShader", type="x-shader/x-fragment">
