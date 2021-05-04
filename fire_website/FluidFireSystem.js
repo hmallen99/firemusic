@@ -4,7 +4,7 @@ import { GPUComputationRenderer } from 'https://cdn.jsdelivr.net/npm/three@0.127
 
 const WIDTH = 64;
 
-class SmokeSystem {
+class FluidFireSystem {
     constructor(params) {
         this.scene = params.scene;
         this.camera = params.camera;
@@ -12,7 +12,7 @@ class SmokeSystem {
         this._z_spawn = params._z_spawn;
         
         this._init_box();
-        this._init_smoke_shader();
+        this._init_fluid_shader();
     }
 
     _fillTexture(texture, texValue, random_offset) {
@@ -31,7 +31,7 @@ class SmokeSystem {
     }
 
     _init_box() {
-        // Initialize the smoke box
+        // Initialize the fire box
         const boxGeometry = new THREE.BoxGeometry(2, 2, 2);
         
     
@@ -88,8 +88,8 @@ class SmokeSystem {
         this.scene.add(this.altBoxMesh);
     }
 
-    _init_smoke_shader() {
-        // Initialize the smoke GLSL shaders
+    _init_fluid_shader() {
+        // Initialize the fire GLSL shaders
         this.gpuCompute = new GPUComputationRenderer(WIDTH * WIDTH, WIDTH, this.renderer);
         
         // Initialize Textures
@@ -228,4 +228,4 @@ class SmokeSystem {
 }
 
 
-export {SmokeSystem as default};
+export {FluidFireSystem as default};

@@ -2,7 +2,8 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.127/build/three.mod
 
 import {GLTFLoader} from 'https://cdn.jsdelivr.net/npm/three@0.118.1/examples/jsm/loaders/GLTFLoader.js';
 import {OrbitControls} from 'https://cdn.jsdelivr.net/npm/three@0.127/examples/jsm/controls/OrbitControls.js';
-import SmokeSystem from './SmokeSystem.js';
+import {GUI} from 'https://cdn.jsdelivr.net/npm/three@0.127/examples/jsm/libs/dat.gui.module.js';
+import FluidFireSystem from './FluidFireSystem.js';
 
 
 const _VS = `
@@ -670,6 +671,9 @@ class EmberSystem {
 
 class ParticleSystemDemo {
   constructor() {
+    this.params= {
+        particleFire: true,
+    }
     this._Initialize();
   }
 
@@ -687,6 +691,9 @@ class ParticleSystemDemo {
     window.addEventListener('resize', () => {
       this._OnWindowResize();
     }, false);
+
+    const gui = new GUI();
+    gui.add(this.params, "particleFire").name("Use Particle Fire");
 
     const fov = 60;
     const aspect = 1920 / 1080;
@@ -739,9 +746,9 @@ class ParticleSystemDemo {
     this._scene.background = texture;
 
     var num_fires = 5;
-    //this._fire_list = new Array(num_fires);
+    this._fire_list = new Array(num_fires);
     var max_width = (num_fires-1) * 10;
-    /*for (var i = 0; i < num_fires; i++) {
+    for (var i = 0; i < num_fires; i++) {
       this._fire_list[i] = new ParticleSystem({
           parent: this._scene,
           camera: this._camera,
@@ -756,11 +763,11 @@ class ParticleSystemDemo {
           camera: this._camera,
           _z_spawn: i * 10 - max_width/2,
       });
-    }*/
+    }
 
-    this._smoke_list = new Array(num_fires);
+    this._realistic_fire_list = new Array(num_fires);
     for (var i = 0; i < num_fires; i++) {
-        this._smoke_list[i] = new SmokeSystem({
+        this._realistic_fire_list[i] = new FluidFireSystem({
             scene: this._scene,
             camera: this._camera,
             renderer: this._threejs,
@@ -770,7 +777,7 @@ class ParticleSystemDemo {
 
     this._previousRAF = null;
     //this._RAF();
-    this._RAF_smokes();
+    this._simulate();
   }
 
   _onAudioChange() {
@@ -807,9 +814,9 @@ class ParticleSystemDemo {
       });
     }
 
-    this._smoke_list = new Array(num_fires);
+    this._realistic_fire_list = new Array(num_fires);
     for (var i = 0; i < num_fires; i++) {
-        this._smoke_list[i] = new SmokeSystem({
+        this._realistic_fire_list[i] = new FluidFireSystem({
             scene: this._scene,
             camera: this._camera,
             renderer: this._threejs,
@@ -824,38 +831,92 @@ class ParticleSystemDemo {
     this._threejs.setSize(window.innerWidth, window.innerHeight);
   }
 
-  _RAF() {
+  _simulate() {
+    if (this.params.particleFire) {
+        if (this._realistic_fire_list.length > 0) {
+            while(this._scene.children.length > 0){ 
+                this._scene.remove(this._scene.children[0]); 
+            }
+            this._realistic_fire_list = [];
+
+            var num_fires = 22;
+            var max_width = (num_fires-1) * 10;
+            this._fire_list = new Array(num_fires);
+            for (var i = 0; i < num_fires; i++) {
+                this._fire_list[i] = new ParticleSystem({
+                    parent: this._scene,
+                    camera: this._camera,
+                    _z_spawn: i * 10 - max_width/2,
+                });
+              }
+          
+              //add embers
+              this._ember_list = new Array(num_fires);
+              for (var i = 0; i < num_fires; i++) {
+                this._ember_list[i] = new EmberSystem({
+                    parent: this._scene,
+                    camera: this._camera,
+                    _z_spawn: i * 10 - max_width/2,
+                });
+              }
+        }
+        this._RAF_particle();
+    } else {
+        if (this._ember_list.length > 0 || this._fire_list > 0) {
+            while(this._scene.children.length > 0){ 
+                this._scene.remove(this._scene.children[0]); 
+            }
+            this._ember_list = [];
+            this._fire_list = [];
+
+            var num_fires = 22;
+            var max_width = (num_fires-1) * 10;
+            this._realistic_fire_list = new Array(num_fires);
+            for (var i = 0; i < num_fires; i++) {
+                this._realistic_fire_list[i] = new FluidFireSystem({
+                    scene: this._scene,
+                    camera: this._camera,
+                    renderer: this._threejs,
+                    _z_spawn: i * 10 - max_width/2,
+                });
+            }
+        }
+        this._RAF_realistic();
+    }
+  }
+
+  _RAF_particle() {
     requestAnimationFrame((t) => {
       if (this._previousRAF === null) {
         this._previousRAF = t;
       }
 
-      this._RAF();
+      this._simulate();
       this._threejs.render(this._scene, this._camera);
       this._Step(t - this._previousRAF, t);
       this._previousRAF = t;
     });
   }
 
-  _RAF_smokes() {
+  _RAF_realistic() {
     requestAnimationFrame((t) => {
       if (this._previousRAF === null) {
         this._previousRAF = t;
       }
 
-      this._RAF_smokes();
-      this._UpdateSmokes();
+      this._simulate();
+      this._UpdateRealisticFires();
       this._threejs.render(this._scene, this._camera);
       this._previousRAF = t;
     });
   }
 
-  _UpdateSmokes(){
-    for (var i = 0; i < this._smoke_list.length; i++) {
+  _UpdateRealisticFires(){
+    for (var i = 0; i < this._realistic_fire_list.length; i++) {
         if (!audio.paused) {
             analyser.getByteFrequencyData(dataArray);
         }
-        this._smoke_list[i].update(this._smoke_list.length - i - 1, audio.paused, dataArray);
+        this._realistic_fire_list[i].update(this._realistic_fire_list.length - i - 1, audio.paused, dataArray);
     }
   }
 
