@@ -36,6 +36,101 @@ const _FS = [
 "}",
 ].join("\n");
 
+// Spotify API Integration: 
+
+async function authorize(){
+        let myHeaders = new Headers();
+        var my_clientID = '03bbc4ece6d945009d5607c6958b26ac';
+        var clientSecret = 'ecbaf00f9fd947ecac83a873e6a7e014';
+        myHeaders.append("Authorization", 'Basic ' + btoa(my_clientID + ':' + clientSecret));
+        myHeaders.append("Content-Type", "application/x-www-form-urlencoded");
+        console.log('Basic ' + btoa(my_clientID + ':' + clientSecret));
+        var urlencoded = new URLSearchParams();
+        urlencoded.append("grant_type", "client_credentials");
+
+        const requestOptions = {
+        method: 'POST',
+        headers: myHeaders,
+        body: urlencoded,
+        redirect: 'follow'
+        }
+        
+        let res = await fetch("https://accounts.spotify.com/api/token", requestOptions);
+        res = await res.json();
+        return res.access_token; 
+    }
+
+async function search(){
+        const access_token = await authorize();
+        //this.setState({access_token});
+        const BASE_URL = 'https://api.spotify.com/v1/search';
+        var track = 'track:' + 'ghostin';
+        var artist = 'artist:' + 'ariana%20grande';
+        if (artist == 'artist:') {
+            artist = ''; 
+        }
+        if (track == 'track:') {
+            track = '';
+        }
+        let FETCH_URL = BASE_URL + '?q=' + track + '%20' + artist  + '&type=track&limit=1'; 
+        //const ALBUM_URL = 'https://api.spotify.com/v1/artists';
+
+        let myHeaders = new Headers();
+        myHeaders.append("Authorization", `Bearer ${access_token}`);
+        
+        const requestOptions = {
+            method: 'GET',
+            headers: myHeaders
+        }
+
+        let res = await fetch(FETCH_URL, requestOptions);
+        res = await res.json();
+        let id = res.tracks.items[0].id;
+
+        const BASE_URL_T = 'https://api.spotify.com/v1/audio-features/';
+        let FETCH_URL_T = BASE_URL_T + id; 
+
+        myHeaders = new Headers();
+        myHeaders.append("Authorization", `Bearer ${access_token}`);
+        
+        const requestOptions_T = {
+            method: 'GET',
+            headers: myHeaders
+        }
+
+        let res_T = await fetch(FETCH_URL_T, requestOptions_T);
+        res_T = await res_T.json();
+        return res_T;
+}
+
+console.log(search());
+
+
+/*
+var spotifyApi = new SpotifyWebApi({
+  clientId: '03bbc4ece6d945009d5607c6958b26ac',
+  clientSecret: 'ecbaf00f9fd947ecac83a873e6a7e014'
+});
+spotifyApi.clientCredentialsGrant().then(
+  function(data) {
+    console.log('The access token expires in ' + data.body['expires_in']);
+    console.log('The access token is ' + data.body['access_token']);
+
+    // Save the access token so that it's used in future calls
+    spotifyApi.setAccessToken(data.body['access_token']);
+  },
+  function(err) {
+    console.log('Something went wrong when retrieving an access token', err);
+  }
+);
+
+var spotifyApi = new SpotifyWebApi();
+spotifyApi.setAccessToken(access_token);
+spotifyApi.getAudioFeaturesForTrack('0tGPJ0bkWOUmH7MEOR77qc', function (err, data) {
+  if (err) console.error(err);
+  else console.log('Song data', data);
+});
+*/
 // Audio Analysis
 
 function fractionate(val, minVal, maxVal) {
@@ -534,7 +629,7 @@ class EmberSystem {
     //embers
     for (let i = 0; i < n; i++) {
       //const life = (Math.random() + 0.5);
-      const life = fire_height / 40 ;
+      const life = fire_height / 30 ;
       //const life = 1.5;
       this._particles.push({
           position: new THREE.Vector3(
