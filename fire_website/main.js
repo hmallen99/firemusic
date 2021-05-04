@@ -11,10 +11,12 @@ uniform float pointMultiplier;
 
 attribute float size;
 attribute float angle;
+attribute float blend;
 attribute vec4 colour;
 
 varying vec4 vColour;
 varying vec2 vAngle;
+varying float vBlend;
 
 void main() {
   vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
@@ -24,6 +26,7 @@ void main() {
 
   vAngle = vec2(cos(angle), sin(angle));
   vColour = colour;
+  vBlend = blend;
 }`;
 
 const _FS = [
@@ -31,10 +34,13 @@ const _FS = [
 "uniform sampler2D diffuseTexture;",
 "varying vec4 vColour;",
 "varying vec2 vAngle;",
+"varying float vBlend;",
 
 "void main() {",
   "vec2 coords = (gl_PointCoord - 0.5) * mat2(vAngle.x, vAngle.y, -vAngle.y, vAngle.x) + 0.5;",
   "gl_FragColor = texture2D(diffuseTexture, coords) * vColour;",
+  "gl_FragColor *= gl_FragColor.w;",
+  "gl_FragColor.w *= vBlend;",
 "}",
 ].join("\n");
 
@@ -155,7 +161,10 @@ class ParticleSystem {
         uniforms: uniforms,
         vertexShader: _VS,
         fragmentShader: _FS,
-        blending: THREE.AdditiveBlending,
+        blending: THREE.CustomBlending,
+        blendEquation: THREE.AddEquation,
+        blendSrc: THREE.OneFactor,
+        blendDst: THREE.OneMinusSrcAlphaFactor,
         depthTest: true,
         depthWrite: false,
         transparent: true,
@@ -170,6 +179,7 @@ class ParticleSystem {
     this._geometry.setAttribute('size', new THREE.Float32BufferAttribute([], 1));
     this._geometry.setAttribute('colour', new THREE.Float32BufferAttribute([], 4));
     this._geometry.setAttribute('angle', new THREE.Float32BufferAttribute([], 1));
+    this._geometry.setAttribute('blend', new THREE.Float32BufferAttribute([], 1));
 
     this._points = new THREE.Points(this._geometry, this._material);
 
@@ -218,6 +228,14 @@ class ParticleSystem {
     }
     
     this._colourSpline.AddPoint(1.0, new THREE.Color(0xFF8080));
+
+    this._colourSplineS = new LinearSpline((t, a, b) => {
+        const c = a.clone();
+      return c.lerp(b, t);
+    })
+
+    this._colourSplineS.AddPoint(0.0, new THREE.Color(0x202020));
+    this._colourSplineS.AddPoint(1.0, new THREE.Color(0x000000));
 
     this._sizeSpline = new LinearSpline((t, a, b) => {
       return a + t * (b - a);
@@ -275,7 +293,26 @@ class ParticleSystem {
           maxLife: life,
           rotation: Math.random() * 2.0 * Math.PI,
           velocity: new THREE.Vector3(0, fire_height, 0),
+          blend: 0.0,
       });
+    }
+
+    for (let i = 0; i < n; i++) {
+        const life = (fire_height + 10) / 20;//- Math.random() * 0.5;
+        this._particles.push({
+            position: new THREE.Vector3(
+                (Math.random() * 2 - 1) * 1.0,
+                (Math.random() * 2 - 6) * 1.0,
+                (Math.random() * 2 - 1 - this._z_spawn) * 1.0),
+            size: (Math.random() * 0.5 + 0.5) * 2.0,
+            colour: new THREE.Color(),
+            alpha: 1.0,
+            life: life,
+            maxLife: life,
+            rotation: Math.random() * 2.0 * Math.PI,
+            velocity: new THREE.Vector3(0, fire_height, 0),
+            blend: 1.0,
+        });
     }
 
     for (let i = 0; i < (n); i++) {
@@ -295,6 +332,7 @@ class ParticleSystem {
           maxLife: life,
           rotation: Math.random() * 2.0 * Math.PI,
           velocity: new THREE.Vector3(0, fire_height, 0),
+          blend: 0.0,
       });
     }
   }
@@ -304,12 +342,14 @@ class ParticleSystem {
     const sizes = [];
     const colours = [];
     const angles = [];
+    const blends = [];
 
     for (let p of this._particles) {
       positions.push(p.position.x, p.position.y, p.position.z);
       colours.push(p.colour.r, p.colour.g, p.colour.b, p.alpha);
       sizes.push(p.currentSize);
       angles.push(p.rotation);
+      blends.push(p.blend);
     }
 
     this._geometry.setAttribute(
@@ -320,6 +360,8 @@ class ParticleSystem {
         'colour', new THREE.Float32BufferAttribute(colours, 4));
     this._geometry.setAttribute(
         'angle', new THREE.Float32BufferAttribute(angles, 1));
+    this._geometry.setAttribute(
+        'blend', new THREE.Float32BufferAttribute(blends, 1));
   
     this._geometry.attributes.position.needsUpdate = true;
     this._geometry.attributes.size.needsUpdate = true;
@@ -351,9 +393,16 @@ class ParticleSystem {
       const t = 1.0 - p.life / p.maxLife;
 
       p.rotation += timeElapsed * 0.5;
-      p.alpha = this._alphaSpline.Get(t);
-      p.currentSize = p.size * this._sizeSpline.Get(t);
-      p.colour.copy(this._colourSpline.Get(t));
+      if (p.blend == 0.0) {
+        p.alpha = this._alphaSpline.Get(t);
+        p.currentSize = p.size * this._sizeSpline.Get(t);
+        p.colour.copy(this._colourSpline.Get(t));
+      } else {
+        p.alpha = this._alphaSpline.Get(t);
+        p.currentSize = p.size * this._sizeSpline.Get(t);
+        p.colour.copy(this._colourSplineS.Get(t));
+      }
+      
 
       p.position.add(p.velocity.clone().multiplyScalar(timeElapsed));
 
@@ -464,6 +513,7 @@ class EmberSystem {
     this._geometry.setAttribute('size', new THREE.Float32BufferAttribute([], 1));
     this._geometry.setAttribute('colour', new THREE.Float32BufferAttribute([], 4));
     this._geometry.setAttribute('angle', new THREE.Float32BufferAttribute([], 1));
+    this._geometry.setAttribute('blend', new THREE.Float32BufferAttribute([], 1));
 
     this._points = new THREE.Points(this._geometry, this._material);
 
@@ -550,6 +600,7 @@ class EmberSystem {
           maxLife: life,
           rotation: Math.random() * 2.0 * Math.PI,
           velocity: new THREE.Vector3(0, fire_height, 0),
+          blend: 0.0,
       });
     }
   }
@@ -559,12 +610,14 @@ class EmberSystem {
     const sizes = [];
     const colours = [];
     const angles = [];
+    const blends = [];
 
     for (let p of this._particles) {
       positions.push(p.position.x, p.position.y, p.position.z);
       colours.push(p.colour.r, p.colour.g, p.colour.b, p.alpha);
       sizes.push(p.currentSize);
       angles.push(p.rotation);
+      blends.push(p.blend);
     }
 
     this._geometry.setAttribute(
@@ -575,6 +628,8 @@ class EmberSystem {
         'colour', new THREE.Float32BufferAttribute(colours, 4));
     this._geometry.setAttribute(
         'angle', new THREE.Float32BufferAttribute(angles, 1));
+    this._geometry.setAttribute(
+        'blend', new THREE.Float32BufferAttribute(blends, 1));
   
     this._geometry.attributes.position.needsUpdate = true;
     this._geometry.attributes.size.needsUpdate = true;
