@@ -65,7 +65,6 @@ async function authorize(){
         var clientSecret = 'ecbaf00f9fd947ecac83a873e6a7e014';
         myHeaders.append("Authorization", 'Basic ' + btoa(my_clientID + ':' + clientSecret));
         myHeaders.append("Content-Type", "application/x-www-form-urlencoded");
-        console.log('Basic ' + btoa(my_clientID + ':' + clientSecret));
         var urlencoded = new URLSearchParams();
         urlencoded.append("grant_type", "client_credentials");
 
@@ -81,12 +80,12 @@ async function authorize(){
         return res.access_token; 
     }
 
-async function search(){
+async function search(title, art_name){
         const access_token = await authorize();
         //this.setState({access_token});
         const BASE_URL = 'https://api.spotify.com/v1/search';
-        var track = 'track:' + 'ghostin';
-        var artist = 'artist:' + 'ariana%20grande';
+        var track = 'track:' + title;
+        var artist = 'artist:' + art_name;
         if (artist == 'artist:') {
             artist = ''; 
         }
@@ -124,34 +123,6 @@ async function search(){
         return res_T;
 }
 
-console.log(search());
-
-
-/*
-var spotifyApi = new SpotifyWebApi({
-  clientId: '03bbc4ece6d945009d5607c6958b26ac',
-  clientSecret: 'ecbaf00f9fd947ecac83a873e6a7e014'
-});
-spotifyApi.clientCredentialsGrant().then(
-  function(data) {
-    console.log('The access token expires in ' + data.body['expires_in']);
-    console.log('The access token is ' + data.body['access_token']);
-
-    // Save the access token so that it's used in future calls
-    spotifyApi.setAccessToken(data.body['access_token']);
-  },
-  function(err) {
-    console.log('Something went wrong when retrieving an access token', err);
-  }
-);
-
-var spotifyApi = new SpotifyWebApi();
-spotifyApi.setAccessToken(access_token);
-spotifyApi.getAudioFeaturesForTrack('0tGPJ0bkWOUmH7MEOR77qc', function (err, data) {
-  if (err) console.error(err);
-  else console.log('Song data', data);
-});
-*/
 // Audio Analysis
 
 function fractionate(val, minVal, maxVal) {
@@ -827,6 +798,39 @@ class ParticleSystemDemo {
     const gui = new GUI();
     gui.add(this.params, "particleFire").name("Use Particle Fire");
     gui.add(this.params, "immersive").name("Dance Mode");
+
+    var title = {title: 'i love you'};
+    var t_control = gui.add(title, 'title');
+
+    var artist = {artist: 'billie eilish'};
+    var a_control = gui.add(artist, 'artist');
+
+    t_control.onChange(function() {
+        var temp = search(encodeURIComponent(title.title.trim()), encodeURIComponent(artist.artist.trim()));
+        if (temp != null) {
+            this.spotifyres = temp;
+            console.log("Song changed!");
+        }
+    });
+
+    a_control.onChange(function() {
+        var temp = search(encodeURIComponent(title.title.trim()), encodeURIComponent(artist.artist.trim()));
+        if (temp != null) {
+            this.spotifyres = temp;
+            console.log("Spotify");
+        }
+    });
+
+    //default song
+     var temp = search(encodeURIComponent(title.title.trim()), encodeURIComponent(artist.artist.trim()));
+    if (temp != null) {
+            this.spotifyres = temp;
+            console.log(this.spotifyres.energy);
+    }
+
+    //var danceability = {danceability: spotifyres.danceability};
+    //gui.add(danceability, 'danceability', 0, 1);
+
 
     const fov = 60;
     const aspect = 1920 / 1080;
