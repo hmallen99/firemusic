@@ -43,7 +43,7 @@ class SmokeSystem {
                 threshold: {value: 0.6},
                 steps: {value: 200},
                 reactionSampler: {value: null},
-                
+                colorMod: {value: new THREE.Vector3(1.0, 0.5, 0.25)},
             },
             vertexShader: document.getElementById('boxVertexShader').textContent,
             fragmentShader: document.getElementById('boxFragmentShader').textContent,
@@ -58,7 +58,7 @@ class SmokeSystem {
                 threshold: {value: 0.6},
                 steps: {value: 200},
                 reactionSampler: {value: null},
-                
+                colorMod: {value: new THREE.Vector3(1.0, 0.5, 0.25)},
             },
             vertexShader: document.getElementById('boxVertexShader').textContent,
             fragmentShader: document.getElementById('boxFragmentShader').textContent,
@@ -70,18 +70,18 @@ class SmokeSystem {
 
         this.boxMesh.position.x = 0;
         this.boxMesh.position.y = 0;
-        this.boxMesh.position.z = this._z_spawn;
+        this.boxMesh.position.z = this._z_spawn * 0.25;
 
         this.boxMesh.scale.x = 5.0;
-        this.boxMesh.scale.y = 10.0;
+        this.boxMesh.scale.y = 5.0;
         this.boxMesh.scale.z = 5.0;
 
         this.altBoxMesh.position.x = 0;
         this.altBoxMesh.position.y = 0;
-        this.altBoxMesh.position.z = this._z_spawn;
+        this.altBoxMesh.position.z = this._z_spawn * 0.25;
 
         this.altBoxMesh.scale.x = 5.0;
-        this.altBoxMesh.scale.y = 10.0;
+        this.altBoxMesh.scale.y = 5.0;
         this.altBoxMesh.scale.z = 5.0;
 
         this.scene.add(this.boxMesh);
@@ -186,7 +186,7 @@ class SmokeSystem {
         }
     }
 
-    update() {
+    update(fireIdx, isPaused, dataArray) {
         // Updates the shaders
         // Call this in _RAF
 
@@ -209,6 +209,21 @@ class SmokeSystem {
         this.altBoxMaterial.uniforms.reactionSampler.value = this.gpuCompute.getAlternateRenderTarget(this.reactionVariable).texture;
         this.boxMesh.material.uniforms.cameraPos.value.copy(this.camera.position);
         this.altBoxMesh.material.uniforms.cameraPos.value.copy(this.camera.position);
+
+        // modulate colors based on music
+        if (isPaused) {
+            this.boxMaterial.uniforms.colorMod.value = new THREE.Vector3(1.0, 0.5, 0.25);
+            this.altBoxMaterial.uniforms.colorMod.value = new THREE.Vector3(1.0, 0.5, 0.25);
+        } else {
+            var buffer_index = Math.round(Math.exp(2.8*fireIdx/22));
+            var colorModifier = Math.max(Math.exp(0.0162 * dataArray[buffer_index])*4 + Math.random() * 5, 15);
+            var r = 1 - (Math.min(128, colorModifier) / 128);
+            var g = 1 - (Math.abs(colorModifier - 127.5) / 127.5);
+            var b = Math.max(colorModifier - 128, 0) / 128;
+            
+            this.boxMaterial.uniforms.colorMod.value = new THREE.Vector3(r, g, b);
+            this.altBoxMaterial.uniforms.colorMod.value = new THREE.Vector3(r, g, b);
+        }
     }
 }
 

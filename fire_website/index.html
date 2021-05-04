@@ -44,6 +44,7 @@
         uniform sampler2D reactionSampler;
         uniform float threshold;
         uniform float steps;
+        uniform vec3 colorMod;
 
         vec2 hitBox( vec3 orig, vec3 dir ) {
             const vec3 box_min = vec3( - 0.5 );
@@ -105,9 +106,8 @@
                     color.a = 1.0;
                     break;
                 }
-                float red_val = length(d.rgb) * reaction;
-                //float red_val = reaction;
-                color.rgb += vec3(red_val, red_val / 2.0, red_val / 4.0);
+                float colorIntensity = length(d.rgb) * reaction;
+                color.rgb += colorIntensity * colorMod;
                 color.a += reaction * 2.0;
                 
                 if ( length(color.b) >  1.0) {

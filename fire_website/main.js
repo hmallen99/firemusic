@@ -807,7 +807,15 @@ class ParticleSystemDemo {
       });
     }
 
-
+    this._smoke_list = new Array(num_fires);
+    for (var i = 0; i < num_fires; i++) {
+        this._smoke_list[i] = new SmokeSystem({
+            scene: this._scene,
+            camera: this._camera,
+            renderer: this._threejs,
+            _z_spawn: i * 10 - max_width/2,
+        });
+    }
   }
 
   _OnWindowResize() {
@@ -844,7 +852,10 @@ class ParticleSystemDemo {
 
   _UpdateSmokes(){
     for (var i = 0; i < this._smoke_list.length; i++) {
-        this._smoke_list[i].update();
+        if (!audio.paused) {
+            analyser.getByteFrequencyData(dataArray);
+        }
+        this._smoke_list[i].update(this._smoke_list.length - i - 1, audio.paused, dataArray);
     }
   }
 
