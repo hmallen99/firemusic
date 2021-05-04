@@ -120,7 +120,7 @@ async function search(title, art_name){
 
         let res_T = await fetch(FETCH_URL_T, requestOptions_T);
         res_T = await res_T.json();
-        return res_T.danceability;
+        return res_T;
 }
 
 // Audio Analysis
@@ -171,10 +171,6 @@ var vizInit = function (){
     play();
     _APP._onAudioChange();
     // add to number of fires here and start audio analysis
-    //get audio Analysis
-    //console.log(dataArray);
-    //console.log(analyser);
-    //analyser.getByteFrequencyData(dataArray);
   }
   
 function play() {
@@ -252,6 +248,7 @@ class ParticleSystem {
 
     this.immersive = params.immersive;
     this.danceability = params.danceability;
+    this.energy = params.energy;
 
     this._camera = params.camera;
     this._particles = [];
@@ -346,7 +343,7 @@ class ParticleSystem {
     }
   }
 
-  _AddParticles(timeElapsed, rgbcolor, fire_height = 15) {
+  _AddParticles(timeElapsed, fire_color, smoke_color, fire_height = 15) {
     if (this._stop) {
       return;
     }
@@ -357,7 +354,8 @@ class ParticleSystem {
     const n = Math.floor(this.gdfsghk * 65.0) * 2;
     this.gdfsghk -= n / 75.0;
     if (!audio.paused) {
-        this._colourSpline._points.splice(0, 1, [0.0, rgbcolor]);
+        this._colourSpline._points.splice(0, 1, [0.0, fire_color]);
+        this._colourSplineS._points.splice(0, 1, [0.0, smoke_color]);
     }
     //this._colourSpline.AddPoint(0.0, new THREE.Color(0xFFFF80));
     for (let i = 0; i < n; i++) {
@@ -535,11 +533,6 @@ class ParticleSystem {
         var freq_value = dataArray[buffer_index];
         // Range of fireheight is from 0 to 255
         var fireheight = Math.max(Math.exp(0.0162 * dataArray[buffer_index])*4 + Math.random() * 5, 15);
-        //console.log(this.danceability);
-
-        //var r = Math.min(250, Math.max(0, freq_value + Math.random() * 10));
-        //var g = Math.min(250, Math.max(0, 12 * (buffer_index/dataArray.length) + Math.random() * 100));
-        //var b = 250;
 
         var r; 
         var g; 
@@ -561,13 +554,30 @@ class ParticleSystem {
           g = Math.random() * 15 + 240;
           b = Math.random() * 150 + 100;
         }
-
-
         var str_color = "rgb(" + Math.round(r) + ", " + Math.round(g) + ", " + Math.round(b) + ")";
-        //var str_color="rgb(0, 255, 0)";
-        var convcolor = new THREE.Color(str_color);
-        //console.log(str_color);
-        this._AddParticles(timeElapsed, convcolor, fireheight/8);
+        var fire_color = new THREE.Color(str_color);
+
+        if (this.energy < 0.4) {
+          // Low energy -> lighter smoke
+          r = Math.random() * 30 + 100;
+          b = Math.random() * 30 + 100;
+          g = Math.random() * 30 + 100;
+        } else if (this.energy > 0.8) {
+          // High energy -> darker smoke
+          r = Math.random() * 25 + 25;
+          b = Math.random() * 25 + 25;
+          g = Math.random() * 25 + 25;
+        } else {
+          // Medium energy -> medium smoke
+          r = Math.random() * 30 + 60;
+          b = Math.random() * 30 + 60;
+          g = Math.random() * 30 + 60;
+        }
+        str_color = "rgb(" + Math.round(r) + ", " + Math.round(g) + ", " + Math.round(b) + ")";
+        var smoke_color = new THREE.Color(str_color);
+
+
+        this._AddParticles(timeElapsed, fire_color, smoke_color, fireheight/8);
     }
     this._UpdateParticles(timeElapsed);
     this._UpdateGeometry();
@@ -783,12 +793,9 @@ class EmberSystem {
           // Medium frequency -> green
           g += Math.random() * 20 + 70;
         }
-        //var r = Math.min(250, Math.max(0, freq_value + Math.random() * 10));
-        //var g = Math.min(250, Math.max(0, 12 * (buffer_index/dataArray.length) + Math.random() * 100));
-        //var b = 250;
+
         var str_color = "rgb(" + Math.round(r) + ", " + Math.round(g) + ", " + Math.round(b) + ")";
         var convcolor = new THREE.Color(str_color);
-        //console.log(str_color);
         this._AddParticles(timeElapsed, convcolor, fireheight/8);
     }
     this._UpdateParticles(timeElapsed);
@@ -802,6 +809,7 @@ class ParticleSystemDemo {
         particleFire: true,
         immersive: false,
         danceability: 1,
+        energy: 1,
     }
     this._Initialize();
   }
@@ -833,21 +841,26 @@ class ParticleSystemDemo {
     var a_control = gui.add(artist, 'artist');
     var d_control;
 
-    search(encodeURIComponent(t_control.object.title.trim()), encodeURIComponent(a_control.object.artist.trim())).then(val => {
+    // Initial Search
+    search(encodeURIComponent(t_control.object.title.trim()), encodeURIComponent(a_control.object.artist.trim())).then(feats => {
         // got value here
-        this.params.danceability = val;
+        this.params.danceability = feats.danceability;
+        this.params.energy = feats.energy;
         d_control = gui.add(this.params, "danceability", 0, 1).name("Danceability");
+        d_control = gui.add(this.params, "energy", 0, 1).name("Energy");
         
     }).catch(e => {
         // error
         console.log(e);
     });
 
-    function updatedance(demo) {
-        search(encodeURIComponent(t_control.object.title.trim()), encodeURIComponent(a_control.object.artist.trim())).then(val => {
+    function updatefeats(demo) {
+        search(encodeURIComponent(t_control.object.title.trim()), encodeURIComponent(a_control.object.artist.trim())).then(feats => {
             // got value here
-            demo.params.danceability = val;
+            demo.params.danceability = feats.danceability;
             d_control.setValue(demo.params.danceability);
+            demo.params.energy = feats.energy;
+            d_control.setValue(demo.params.energy);
         
         }).catch(e => {
             // error
@@ -857,8 +870,7 @@ class ParticleSystemDemo {
     
     var demo = this;
     var submit = { submit:function(){ 
-        updatedance(demo);
-        console.log("changed!");
+        updatefeats(demo);
     }};
     gui.add(submit,'submit').name("Search Spotify");
    
@@ -923,6 +935,7 @@ class ParticleSystemDemo {
           _z_spawn: i * 10 - max_width/2,
           immersive: this.params.immersive,
           danceability: this.params.danceability,
+          energy: this.params.energy,
       });
     }
 
@@ -978,6 +991,7 @@ class ParticleSystemDemo {
           camera: this._camera,
           immersive: this.params.immersive,
           danceability: this.params.danceability,
+          energy: this.params.energy,
           _z_spawn: i * 10 - max_width/2,
       });
     }
@@ -1032,6 +1046,7 @@ class ParticleSystemDemo {
                     camera: this._camera,
                     immersive: this.params.immersive,
                     danceability: this.params.danceability,
+                    energy: this.params.energy,
                     _z_spawn: i * 10 - max_width/2,
                 });
               }
@@ -1114,6 +1129,7 @@ class ParticleSystemDemo {
         for (var i = 0; i < this._fire_list.length; i++) {
             this._fire_list[i].immersive = this.params.immersive;
             this._fire_list[i].danceability = this.params.danceability;
+            this._fire_list[i].energy = this.params.energy;
             this._fire_list[i].Step(timeElapsedS, i);
         }
         for (var i = 0; i < this._ember_list.length; i++) {
@@ -1125,6 +1141,7 @@ class ParticleSystemDemo {
         for (var i = 0; i < this._fire_list.length; i++) {
           this._fire_list[i].immersive = this.params.immersive;
           this._fire_list[i].danceability = this.params.danceability;
+          this._fire_list[i].energy = this.params.energy;
           this._fire_list[i].Step(timeElapsedS);
         }
         for (var i = 0; i < this._ember_list.length; i++) {
