@@ -828,10 +828,10 @@ class ParticleSystemDemo {
     gui.add(this.params, "immersive").name("Dance Mode");
 
     //default song
-    var title = {title: 'breathin'};
+    var title = {title: 'funky galileo'};
     var t_control = gui.add(title, 'title');
 
-    var artist = {artist: 'ariana grande'};
+    var artist = {artist: 'sure sure'};
     var a_control = gui.add(artist, 'artist');
     var d_control;
 
