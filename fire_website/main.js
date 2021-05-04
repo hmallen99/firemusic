@@ -279,6 +279,8 @@ class ParticleSystem {
         vertexColors: true
     });
 
+    this.immersive = params.immersive;
+
     this._camera = params.camera;
     this._particles = [];
 
@@ -392,7 +394,7 @@ class ParticleSystem {
       this._particles.push({
           position: new THREE.Vector3(
               (Math.random() * 2 - 1) * 1.0,
-              (Math.random() * 2 - 6) * 1.0,
+              (Math.random() * 2 * Math.max(1, this.immersive*15) - 6) * 1.0,
               (Math.random() * 2 - 1 - this._z_spawn) * 1.0),
           size: (Math.random() * 0.5 + 0.5) * 2.0,
           colour: new THREE.Color(),
@@ -613,6 +615,8 @@ class EmberSystem {
         vertexColors: true
     });
 
+    this.immersive = params.immersive;
+
     this._camera = params.camera;
     this._particles = [];
 
@@ -697,8 +701,8 @@ class EmberSystem {
       //const life = 1.5;
       this._particles.push({
           position: new THREE.Vector3(
-              (Math.random() * 2 - 1) * 1.0, //changing 2 to 30 here is very cool
-              (Math.random() * 10 - 6) * 1.0,
+              (Math.random() * 2 * Math.max(1, this.immersive*15) - 1) * 1.0,
+              (Math.random() * 9 - 6) * 1.0,
               (Math.random() * 2 - 1 - this._z_spawn) * 1.0),
           size: (Math.random() * 0.5 + 0.5) * 2.0,
           colour: new THREE.Color(),
@@ -830,6 +834,7 @@ class ParticleSystemDemo {
   constructor() {
     this.params= {
         particleFire: true,
+        immersive: false,
     }
     this._Initialize();
   }
@@ -851,6 +856,7 @@ class ParticleSystemDemo {
 
     const gui = new GUI();
     gui.add(this.params, "particleFire").name("Use Particle Fire");
+    gui.add(this.params, "immersive").name("Dance Mode");
 
     const fov = 60;
     const aspect = 1920 / 1080;
@@ -910,6 +916,7 @@ class ParticleSystemDemo {
           parent: this._scene,
           camera: this._camera,
           _z_spawn: i * 10 - max_width/2,
+          immersive: this.params.immersive,
       });
     }
 
@@ -918,6 +925,7 @@ class ParticleSystemDemo {
       this._ember_list[i] = new EmberSystem({
           parent: this._scene,
           camera: this._camera,
+          immersive: this.params.immersive,
           _z_spawn: i * 10 - max_width/2,
       });
     }
@@ -947,7 +955,12 @@ class ParticleSystemDemo {
     var num_fires = 22;
     this._fire_list = new Array(num_fires);
     var max_width = (num_fires-1) * 10;
-    this._camera.position.set(25+num_fires*5, 0, 0);
+    if (!this.params.immersive) {
+        this._camera.position.set(25+num_fires*5, 0, 0);
+    }
+    else {
+        this._camera.position.set(25, 0, 0);
+    }
 
     while(this._scene.children.length > 0){ 
         this._scene.remove(this._scene.children[0]); 
@@ -957,6 +970,7 @@ class ParticleSystemDemo {
       this._fire_list[i] = new ParticleSystem({
           parent: this._scene,
           camera: this._camera,
+          immersive: this.params.immersive,
           _z_spawn: i * 10 - max_width/2,
       });
     }
@@ -967,6 +981,7 @@ class ParticleSystemDemo {
       this._ember_list[i] = new EmberSystem({
           parent: this._scene,
           camera: this._camera,
+          immersive: this.params.immersive,
           _z_spawn: i * 10 - max_width/2,
       });
     }
@@ -989,6 +1004,11 @@ class ParticleSystemDemo {
   }
 
   _simulate() {
+    if (!audio.paused && !this.params.immersive) {
+        this._camera.position.set(25+22*5, 0, 0);
+    } else if (!audio.paused) {
+        this._camera.position.set(25, 0, 0);
+    }
     if (this.params.particleFire) {
         if (this._realistic_fire_list.length > 0) {
             while(this._scene.children.length > 0){ 
@@ -1003,6 +1023,7 @@ class ParticleSystemDemo {
                 this._fire_list[i] = new ParticleSystem({
                     parent: this._scene,
                     camera: this._camera,
+                    immersive: this.params.immersive,
                     _z_spawn: i * 10 - max_width/2,
                 });
               }
@@ -1013,6 +1034,7 @@ class ParticleSystemDemo {
                 this._ember_list[i] = new EmberSystem({
                     parent: this._scene,
                     camera: this._camera,
+                    immersive: this.params.immersive,
                     _z_spawn: i * 10 - max_width/2,
                 });
               }
@@ -1082,17 +1104,21 @@ class ParticleSystemDemo {
     if (!audio.paused) {
         analyser.getByteFrequencyData(dataArray);
         for (var i = 0; i < this._fire_list.length; i++) {
+            this._fire_list[i].immersive = this.params.immersive;
             this._fire_list[i].Step(timeElapsedS, i);
         }
         for (var i = 0; i < this._ember_list.length; i++) {
+          this._ember_list[i].immersive = this.params.immersive;
           this._ember_list[i].Step(timeElapsedS, t, i); 
         }
     }
     else {
         for (var i = 0; i < this._fire_list.length; i++) {
+          this._fire_list[i].immersive = this.params.immersive;
           this._fire_list[i].Step(timeElapsedS);
         }
         for (var i = 0; i < this._ember_list.length; i++) {
+          this._ember_list[i].immersive = this.params.immersive;
           this._ember_list[i].Step(timeElapsedS, t); 
         }
     }
