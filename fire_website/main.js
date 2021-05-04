@@ -120,7 +120,7 @@ async function search(title, art_name){
 
         let res_T = await fetch(FETCH_URL_T, requestOptions_T);
         res_T = await res_T.json();
-        return res_T;
+        return res_T.danceability;
 }
 
 // Audio Analysis
@@ -822,40 +822,44 @@ class ParticleSystemDemo {
     const gui = new GUI();
     gui.add(this.params, "particleFire").name("Use Particle Fire");
     gui.add(this.params, "immersive").name("Dance Mode");
-    gui.add(this.params, "danceability", 0, 1).name("Danceability");
-
-    var title = {title: 'i love you'};
-    var t_control = gui.add(title, 'title');
-
-    var artist = {artist: 'billie eilish'};
-    var a_control = gui.add(artist, 'artist');
-
-    t_control.onChange(function() {
-        var temp = search(encodeURIComponent(title.title.trim()), encodeURIComponent(artist.artist.trim()));
-        if (temp != null) {
-            this.spotifyres = temp;
-            console.log("Song changed!");
-        }
-    });
-
-    a_control.onChange(function() {
-        var temp = search(encodeURIComponent(title.title.trim()), encodeURIComponent(artist.artist.trim()));
-        if (temp != null) {
-            this.spotifyres = temp;
-            console.log("Spotify");
-        }
-    });
 
     //default song
-     var temp = search(encodeURIComponent(title.title.trim()), encodeURIComponent(artist.artist.trim()));
-    if (temp != null) {
-            this.spotifyres = temp;
-            console.log(this.spotifyres.energy);
+    var title = {title: 'breathin'};
+    var t_control = gui.add(title, 'title');
+
+    var artist = {artist: 'ariana grande'};
+    var a_control = gui.add(artist, 'artist');
+    var d_control;
+
+    search(encodeURIComponent(t_control.object.title.trim()), encodeURIComponent(a_control.object.artist.trim())).then(val => {
+        // got value here
+        this.params.danceability = val;
+        d_control = gui.add(this.params, "danceability", 0, 1).name("Danceability");
+        
+    }).catch(e => {
+        // error
+        console.log(e);
+    });
+
+    function updatedance(demo) {
+        search(encodeURIComponent(t_control.object.title.trim()), encodeURIComponent(a_control.object.artist.trim())).then(val => {
+            // got value here
+            demo.params.danceability = val;
+            d_control.setValue(demo.params.danceability);
+        
+        }).catch(e => {
+            // error
+            console.log(e);
+        });
     }
-
-    //var danceability = {danceability: spotifyres.danceability};
-    //gui.add(danceability, 'danceability', 0, 1);
-
+    
+    var demo = this;
+    var submit = { submit:function(){ 
+        updatedance(demo);
+        console.log("changed!");
+    }};
+    gui.add(submit,'submit').name("Search Spotify");
+   
 
     const fov = 60;
     const aspect = 1920 / 1080;
