@@ -280,6 +280,7 @@ class ParticleSystem {
     });
 
     this.immersive = params.immersive;
+    this.danceability = params.danceability;
 
     this._camera = params.camera;
     this._particles = [];
@@ -559,16 +560,38 @@ class ParticleSystem {
         // while concentrating on lower ones (higher ones aren't all that exciting)
         var buffer_index = Math.round(Math.exp(2.8*fire_i/22));
         var freq_value = dataArray[buffer_index];
-        //var fireheight = Math.max(dataArray[buffer_index]/2, + Math.random()*5, 0);
         // Range of fireheight is from 0 to 255
         var fireheight = Math.max(Math.exp(0.0162 * dataArray[buffer_index])*4 + Math.random() * 5, 15);
-        
+        //console.log(this.danceability);
 
-        //var r = fireheight + (25 * (fire_i/dataArray.length));
-        var r = Math.min(250, Math.max(0, freq_value + Math.random() * 10));
-        var g = Math.min(250, Math.max(0, 12 * (buffer_index/dataArray.length) + Math.random() * 100));
-        var b = 250;
+        //var r = Math.min(250, Math.max(0, freq_value + Math.random() * 10));
+        //var g = Math.min(250, Math.max(0, 12 * (buffer_index/dataArray.length) + Math.random() * 100));
+        //var b = 250;
+
+        var r; 
+        var g; 
+        var b; 
+        if (this.danceability < 0.4) {
+          // Low danceability -> more blue
+          r = Math.random() * 50 + 20;
+          g = Math.random() * 50 + 60;
+          b = Math.random() * 5 + 250;
+          r=0;
+        } else if (this.danceability > 0.8) {
+          // High danceability -> red
+          r = Math.random() * 15 + 240;
+          g = Math.random() * 180 + 60;
+          b = Math.random() * 180 + 60;
+        } else {
+          // Medium danceability -> green
+          r = Math.random() * 200 + 20;
+          g = Math.random() * 15 + 240;
+          b = Math.random() * 150 + 100;
+        }
+
+
         var str_color = "rgb(" + Math.round(r) + ", " + Math.round(g) + ", " + Math.round(b) + ")";
+        //var str_color="rgb(0, 255, 0)";
         var convcolor = new THREE.Color(str_color);
         //console.log(str_color);
         this._AddParticles(timeElapsed, convcolor, fireheight/8);
@@ -772,7 +795,7 @@ class EmberSystem {
         //var fireheight = Math.max(dataArray[buffer_index]/2, + Math.random()*5, 0);
         // Range of fireheight is from 0 to 255
         var fireheight = Math.max(Math.exp(0.0162 * dataArray[buffer_index])*4 + Math.random() * 5, 15);
-        
+
         // Baseline RGB values range from 60 to 160
         var r = Math.random() * 100 + 60;
         var g = Math.random() * 100 + 60;
@@ -805,6 +828,7 @@ class ParticleSystemDemo {
     this.params= {
         particleFire: true,
         immersive: false,
+        danceability: 1,
     }
     this._Initialize();
   }
@@ -827,6 +851,7 @@ class ParticleSystemDemo {
     const gui = new GUI();
     gui.add(this.params, "particleFire").name("Use Particle Fire");
     gui.add(this.params, "immersive").name("Dance Mode");
+    gui.add(this.params, "danceability", 0, 1).name("Danceability");
 
     const fov = 60;
     const aspect = 1920 / 1080;
@@ -887,6 +912,7 @@ class ParticleSystemDemo {
           camera: this._camera,
           _z_spawn: i * 10 - max_width/2,
           immersive: this.params.immersive,
+          danceability: this.params.danceability,
       });
     }
 
@@ -941,6 +967,7 @@ class ParticleSystemDemo {
           parent: this._scene,
           camera: this._camera,
           immersive: this.params.immersive,
+          danceability: this.params.danceability,
           _z_spawn: i * 10 - max_width/2,
       });
     }
@@ -994,6 +1021,7 @@ class ParticleSystemDemo {
                     parent: this._scene,
                     camera: this._camera,
                     immersive: this.params.immersive,
+                    danceability: this.params.danceability,
                     _z_spawn: i * 10 - max_width/2,
                 });
               }
@@ -1075,6 +1103,7 @@ class ParticleSystemDemo {
         analyser.getByteFrequencyData(dataArray);
         for (var i = 0; i < this._fire_list.length; i++) {
             this._fire_list[i].immersive = this.params.immersive;
+            this._fire_list[i].danceability = this.params.danceability;
             this._fire_list[i].Step(timeElapsedS, i);
         }
         for (var i = 0; i < this._ember_list.length; i++) {
@@ -1085,6 +1114,7 @@ class ParticleSystemDemo {
     else {
         for (var i = 0; i < this._fire_list.length; i++) {
           this._fire_list[i].immersive = this.params.immersive;
+          this._fire_list[i].danceability = this.params.danceability;
           this._fire_list[i].Step(timeElapsedS);
         }
         for (var i = 0; i < this._ember_list.length; i++) {
