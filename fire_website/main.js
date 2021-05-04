@@ -329,7 +329,7 @@ class ParticleSystem {
       return c.lerp(b, t);
     })
 
-    this._colourSplineS.AddPoint(0.0, new THREE.Color(0x202020));
+    this._colourSplineS.AddPoint(0.0, new THREE.Color(0x404040));
     this._colourSplineS.AddPoint(1.0, new THREE.Color(0x000000));
 
     this._sizeSpline = new LinearSpline((t, a, b) => {
