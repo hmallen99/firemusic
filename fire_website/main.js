@@ -927,10 +927,10 @@ class ParticleSystemDemo {
 
     this._scene.background = texture;
 
-    var num_fires = 5;
-    this._fire_list = new Array(num_fires);
-    var max_width = (num_fires-1) * 10;
-    for (var i = 0; i < num_fires; i++) {
+    this.num_fires = 5;
+    this._fire_list = new Array(this.num_fires);
+    var max_width = (this.num_fires-1) * 10;
+    for (var i = 0; i < this.num_fires; i++) {
       this._fire_list[i] = new ParticleSystem({
           parent: this._scene,
           camera: this._camera,
@@ -941,8 +941,8 @@ class ParticleSystemDemo {
       });
     }
 
-    this._ember_list = new Array(num_fires);
-    for (var i = 0; i < num_fires; i++) {
+    this._ember_list = new Array(this.num_fires);
+    for (var i = 0; i < this.num_fires; i++) {
       this._ember_list[i] = new EmberSystem({
           parent: this._scene,
           camera: this._camera,
@@ -951,8 +951,8 @@ class ParticleSystemDemo {
       });
     }
 
-    this._realistic_fire_list = new Array(num_fires);
-    for (var i = 0; i < num_fires; i++) {
+    this._realistic_fire_list = new Array(this.num_fires);
+    for (var i = 0; i < this.num_fires; i++) {
         this._realistic_fire_list[i] = new FluidFireSystem({
             scene: this._scene,
             camera: this._camera,
@@ -969,15 +969,15 @@ class ParticleSystemDemo {
   _onAudioChange() {
     // get audio analysis
     analyser.getByteFrequencyData(dataArray);
-    //var num_fires = dataArray.length/4;
+
     // dataArray.length = 128
     // dataArray[i] = i * sample_rate / fftsize
     // fft size = 128*2
-    var num_fires = 22;
-    this._fire_list = new Array(num_fires);
-    var max_width = (num_fires-1) * 10;
+    this.num_fires = 22;
+    this._fire_list = new Array(this.num_fires);
+    var max_width = (this.num_fires-1) * 10;
     if (!this.params.immersive) {
-        this._camera.position.set(25+num_fires*5, 0, 0);
+        this._camera.position.set(25+this.num_fires*5, 0, 0);
     }
     else {
         this._camera.position.set(25, 0, 0);
@@ -987,7 +987,7 @@ class ParticleSystemDemo {
         this._scene.remove(this._scene.children[0]); 
     }
 
-    for (var i = 0; i < num_fires; i++) {
+    for (var i = 0; i < this.num_fires; i++) {
       this._fire_list[i] = new ParticleSystem({
           parent: this._scene,
           camera: this._camera,
@@ -999,8 +999,8 @@ class ParticleSystemDemo {
     }
 
     //add embers
-    this._ember_list = new Array(num_fires);
-    for (var i = 0; i < num_fires; i++) {
+    this._ember_list = new Array(this.num_fires);
+    for (var i = 0; i < this.num_fires; i++) {
       this._ember_list[i] = new EmberSystem({
           parent: this._scene,
           camera: this._camera,
@@ -1009,8 +1009,8 @@ class ParticleSystemDemo {
       });
     }
 
-    this._realistic_fire_list = new Array(num_fires);
-    for (var i = 0; i < num_fires; i++) {
+    this._realistic_fire_list = new Array(this.num_fires);
+    for (var i = 0; i < this.num_fires; i++) {
         this._realistic_fire_list[i] = new FluidFireSystem({
             scene: this._scene,
             camera: this._camera,
@@ -1039,10 +1039,11 @@ class ParticleSystemDemo {
             }
             this._realistic_fire_list = [];
 
-            var num_fires = 22;
-            var max_width = (num_fires-1) * 10;
-            this._fire_list = new Array(num_fires);
-            for (var i = 0; i < num_fires; i++) {
+            //var num_fires = 22;
+            var num_fires = this.num_fires;
+            var max_width = (this.num_fires-1) * 10;
+            this._fire_list = new Array(this.num_fires);
+            for (var i = 0; i < this.num_fires; i++) {
                 this._fire_list[i] = new ParticleSystem({
                     parent: this._scene,
                     camera: this._camera,
@@ -1054,8 +1055,8 @@ class ParticleSystemDemo {
               }
           
               //add embers
-              this._ember_list = new Array(num_fires);
-              for (var i = 0; i < num_fires; i++) {
+              this._ember_list = new Array(this.num_fires);
+              for (var i = 0; i < this.num_fires; i++) {
                 this._ember_list[i] = new EmberSystem({
                     parent: this._scene,
                     camera: this._camera,
@@ -1073,10 +1074,10 @@ class ParticleSystemDemo {
             this._ember_list = [];
             this._fire_list = [];
 
-            var num_fires = 22;
-            var max_width = (num_fires-1) * 10;
-            this._realistic_fire_list = new Array(num_fires);
-            for (var i = 0; i < num_fires; i++) {
+            this.num_fires = 22;
+            var max_width = (this.num_fires-1) * 10;
+            this._realistic_fire_list = new Array(this.num_fires);
+            for (var i = 0; i < this.num_fires; i++) {
                 this._realistic_fire_list[i] = new FluidFireSystem({
                     scene: this._scene,
                     camera: this._camera,
