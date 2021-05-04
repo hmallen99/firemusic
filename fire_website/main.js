@@ -336,11 +336,13 @@ class ParticleSystem {
   _onKeyUp(event) {
     // TODO: switch this to the Demo class
     switch(event.keyCode) {
+    /*
       case 32: // SPACE
       this._particles = [];
       this._stop = !this._stop;
         //this._AddParticles();
         break;
+    */
     }
   }
 
