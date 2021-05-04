@@ -44,6 +44,19 @@ const _FS = [
 "}",
 ].join("\n");
 
+const _FS_2 = [
+
+    "uniform sampler2D diffuseTexture;",
+    "varying vec4 vColour;",
+    "varying vec2 vAngle;",
+    "varying float vBlend;",
+    
+    "void main() {",
+      "vec2 coords = (gl_PointCoord - 0.5) * mat2(vAngle.x, vAngle.y, -vAngle.y, vAngle.x) + 0.5;",
+      "gl_FragColor = texture2D(diffuseTexture, coords) * vColour;",
+    "}",
+    ].join("\n");
+
 // Spotify API Integration: 
 
 async function authorize(){
@@ -592,7 +605,7 @@ class EmberSystem {
     this._material = new THREE.ShaderMaterial({
         uniforms: uniforms,
         vertexShader: _VS,
-        fragmentShader: _FS,
+        fragmentShader: _FS_2,
         blending: THREE.AdditiveBlending,
         depthTest: true,
         depthWrite: false,
@@ -608,7 +621,6 @@ class EmberSystem {
     this._geometry.setAttribute('size', new THREE.Float32BufferAttribute([], 1));
     this._geometry.setAttribute('colour', new THREE.Float32BufferAttribute([], 4));
     this._geometry.setAttribute('angle', new THREE.Float32BufferAttribute([], 1));
-    this._geometry.setAttribute('blend', new THREE.Float32BufferAttribute([], 1));
 
     this._points = new THREE.Points(this._geometry, this._material);
 
@@ -672,8 +684,8 @@ class EmberSystem {
       this.gdfsghk = 0.0;
     }
     this.gdfsghk += timeElapsed;
-    //const n = Math.floor(this.gdfsghk * 75.0);
-    const n = 1;
+    const n = Math.floor(this.gdfsghk * 75.0);
+    //const n = 1;
     this.gdfsghk -= n / 75.0;
     if (!audio.paused) {
       this._colourSpline._points.splice(0, 1, [0.0, rgbcolor]);
@@ -695,7 +707,6 @@ class EmberSystem {
           maxLife: life,
           rotation: Math.random() * 2.0 * Math.PI,
           velocity: new THREE.Vector3(0, fire_height, 0),
-          blend: 0.0,
       });
     }
   }
@@ -705,14 +716,12 @@ class EmberSystem {
     const sizes = [];
     const colours = [];
     const angles = [];
-    const blends = [];
 
     for (let p of this._particles) {
       positions.push(p.position.x, p.position.y, p.position.z);
       colours.push(p.colour.r, p.colour.g, p.colour.b, p.alpha);
       sizes.push(p.currentSize);
       angles.push(p.rotation);
-      blends.push(p.blend);
     }
 
     this._geometry.setAttribute(
@@ -723,8 +732,6 @@ class EmberSystem {
         'colour', new THREE.Float32BufferAttribute(colours, 4));
     this._geometry.setAttribute(
         'angle', new THREE.Float32BufferAttribute(angles, 1));
-    this._geometry.setAttribute(
-        'blend', new THREE.Float32BufferAttribute(blends, 1));
   
     this._geometry.attributes.position.needsUpdate = true;
     this._geometry.attributes.size.needsUpdate = true;
