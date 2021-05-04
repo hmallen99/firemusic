@@ -663,11 +663,13 @@ class EmberSystem {
   _onKeyUp(event) {
     // TODO: switch this to the Demo class
     switch(event.keyCode) {
+    /*
       case 32: // SPACE
       this._particles = [];
       this._stop = !this._stop;
         //this._AddParticles();
         break;
+    */
     }
   }
 
@@ -834,10 +836,10 @@ class ParticleSystemDemo {
     gui.add(this.params, "immersive").name("Dance Mode");
 
     //default song
-    var title = {title: 'breathin'};
+    var title = {title: 'funky galileo'};
     var t_control = gui.add(title, 'title');
 
-    var artist = {artist: 'ariana grande'};
+    var artist = {artist: 'sure sure'};
     var a_control = gui.add(artist, 'artist');
     var d_control;
 
