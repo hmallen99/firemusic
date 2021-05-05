@@ -52,9 +52,17 @@ table, tr, td {
 
 <h2 align="middle">Technical Approach:</h2>
 <h3 align="middle">Fire Particle System</h3>
+
+<center><img src="./images/particle_system.png" align="middle" height="300px"style="float:right;" /></center>
 <p>
-  TODO
+  For our basic fire system, we worked off an <a href="https://github.com/simondevyoutube/ThreeJS_Tutorial_ParticleSystems">existing particle system demo</a>. This simulation simulated flames shooting out of a rocket, so we had to make some fundamental changes to what the particle system looked like. We used this diagram to the right to determine the different steps in rendering a particle system.
 </p>
+<p>First, to represent the particles, we decreased the average size of the particles and increased the number of particles added at every timestep in order to make the particles less noticeable and the entire system more dynamic and realistic. We set an initial opacity and color that mimicks the color of the fire, and we randomly generate lifespans. We also set an initial velocity so that the fire does not shoot up unrealistically, nor does it stay so low as to be completely uninteresting.
+</p>
+<p>
+  Second, to update the particle, we update both its attributes and position. For its appearance attributes, we slowly decrease the alpha value the particle fades as it reaches the top of the fire. Then, we update its next location. This involves many forces: rotation, so that particles spin around to create more stoachasticity; gravity; drag; and pressure points. While gravity and drag improve the rendering of the particle system, we found that the fire was not as realistic as we desired, since there was no flickering of flames like in real fires. Thus, we spawned randomly generated pressure points that attract particles nearby. These pressure points are also particles, but they have a different lifespan and do not change positions until their lifespan is used up and a new point is randomly generated to take its place.
+</p>
+<br>
 
 <h3 align="middle">Fire Fluid System</h3>
 <p>
@@ -73,12 +81,17 @@ table, tr, td {
 
 <h3 align="middle">Music Analysis</h3>
 <p>
-  TODO
+  Once we connected the fires with the music, we had various stylistic and technical choices. First, we had to decide how to visualize the music. For this, we used TODO: write more about get byte frequencies. After using the FFT, we chose a number of frequencies to represent. We found that higher frequencies are very sensitive and are not very interesting to look at, so to determine which frequency to look at, we used an exponential function that takes in the fire index and returned an index of the FFT array. This ensured that more of the fires reflected lower frequencies, while were still a few that captured the higher frequencies.
+</p>
+<p>
+  Then, we had to make some design choices about the fire. In order to freflect a higher magnitude of a frequency, we chose to increase the velocity and lifespan of particles in that fire. That meant the fire would be much taller than the other fires. We encountered various problems trying to make the fire look realistic at various heights while also not being too computationally expensive. At the end, we settled on a range of parameters that seemed appropriate and balanced our main concerns.
+</p>
+<p>
+  Finally, we had some fun with incorporating parts of the Spotify API to make the fires more interactive. Based on the danceability and energy of tracks, we changed the colors of the fire particles and smoke particles. The lower the energy of the track, the lighter the smoke would be. Low danceability also corresponded to bluer flames; medium danceability to green flames; and high danceability to red flames. In order to achieve this effect, we changed the color values, which are interpolated throughout the lifespan of the particle. Thus, a particle can start out as a more saturated blue and slowly fade. [TODO: not sure if this is correct]
 </p>
 
-<h3 align="middle">Special Effects</h3>
+<h3 align="middle">Misc</h3>
 <p>
-  (e.g. color, velocity, etc.)
   TODO
 </p>
 
