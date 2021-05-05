@@ -842,6 +842,7 @@ class ParticleSystemDemo {
     var artist = {artist: 'sure sure'};
     var a_control = gui.add(artist, 'artist');
     var d_control;
+    var e_control;
 
     // Initial Search
     search(encodeURIComponent(t_control.object.title.trim()), encodeURIComponent(a_control.object.artist.trim())).then(feats => {
@@ -849,7 +850,7 @@ class ParticleSystemDemo {
         this.params.danceability = feats.danceability;
         this.params.energy = feats.energy;
         d_control = gui.add(this.params, "danceability", 0, 1).name("Danceability");
-        d_control = gui.add(this.params, "energy", 0, 1).name("Energy");
+        e_control = gui.add(this.params, "energy", 0, 1).name("Energy");
         
     }).catch(e => {
         // error
@@ -862,7 +863,7 @@ class ParticleSystemDemo {
             demo.params.danceability = feats.danceability;
             d_control.setValue(demo.params.danceability);
             demo.params.energy = feats.energy;
-            d_control.setValue(demo.params.energy);
+            e_control.setValue(demo.params.energy);
         
         }).catch(e => {
             // error
