@@ -1028,12 +1028,13 @@ class ParticleSystemDemo {
   }
 
   _simulate() {
-    if (!audio.paused && !this.params.immersive) {
-        this._camera.position.set(25+22*5, 0, 0);
-    } else if (!audio.paused) {
-        this._camera.position.set(25, 0, 0);
-    }
+
     if (this.params.particleFire) {
+        if (!audio.paused && !this.params.immersive) {
+            this._camera.position.set(25+22*5, 0, 0);
+        } else if (!audio.paused) {
+            this._camera.position.set(25, 0, 0);
+        }
         if (this._realistic_fire_list.length > 0) {
             while(this._scene.children.length > 0){ 
                 this._scene.remove(this._scene.children[0]); 
@@ -1068,6 +1069,11 @@ class ParticleSystemDemo {
         }
         this._RAF_particle();
     } else {
+        if (!audio.paused && !this.params.immersive) {
+            this._camera.position.set(5+22*2.5, 0, 0);
+        } else if (!audio.paused) {
+            this._camera.position.set(25, 0, 0);
+        }
         if (this._ember_list.length > 0 || this._fire_list > 0) {
             while(this._scene.children.length > 0){ 
                 this._scene.remove(this._scene.children[0]); 
@@ -1122,7 +1128,7 @@ class ParticleSystemDemo {
         if (!audio.paused) {
             analyser.getByteFrequencyData(dataArray);
         }
-        this._realistic_fire_list[i].update(this._realistic_fire_list.length - i - 1, audio.paused, dataArray);
+        this._realistic_fire_list[i].update(this._realistic_fire_list.length - i - 1, audio.paused, dataArray, this.params.danceability, this.params.energy);
     }
   }
 

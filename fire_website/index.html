@@ -98,19 +98,26 @@
             delta /= steps;
             float count = 0.0;
             for ( float t = bounds.x; t < bounds.y; t += delta ) {
-                vec4 d = sample4(p + 0.5);
+                vec3 hitPoint = p + 0.5;
+                vec4 d = sample4(hitPoint);
                 count += 1.0;
-                float reaction = sampleReaction(p + 0.5);
+                float reaction = sampleReaction(hitPoint);
                 if (d.w > 0.0) {
                     color.rgb = max(color.rgb, vec3(0.4));
                     color.a = 1.0;
                     break;
                 }
                 float colorIntensity = length(d.rgb) * reaction;
-                color.rgb += colorIntensity * colorMod;
-                color.a += reaction * 2.0;
+                if (colorIntensity <= 0.0 && length(d.rgb) > 0.001) {
+                    color.rgb += vec3(length(d.rgb)) * hitPoint.y;
+                    color.a += length(d.rgb) * hitPoint.y;
+                } else {
+                    color.rgb += colorIntensity * colorMod;
+                    color.a += reaction * 2.0;
+                }
                 
-                if ( length(color.b) >  1.0) {
+                
+                if ( length(color.rgb) >  3.0) {
                     break;
                 }
                 p += rayDir * delta;

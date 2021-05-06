@@ -186,19 +186,26 @@ class FluidFireSystem {
         }
     }
 
-    update(fireIdx, isPaused, dataArray) {
+    update(fireIdx, isPaused, dataArray, danceConst, energyConst) {
         // Updates the shaders
         // Call this in _RAF
 
         // Set render targets to outputs of dependencies
         this.advectUniforms["temperatureSampler"].value = this.gpuCompute.getAlternateRenderTarget(this.temperatureVariable).texture;
-        this.advectUniforms["velocityOffset"].value = new THREE.Vector3(Math.random() * 10 - 5, Math.random() * 10 - 5, Math.random() * 10 - 5);
+        
         this.divergenceUniforms["velocitySampler"].value = this.gpuCompute.getAlternateRenderTarget(this.advectVariable).texture;
         this.jacobiUniforms["velocitySampler"].value = this.gpuCompute.getAlternateRenderTarget(this.advectVariable).texture;
         this.jacobiUniforms["divergenceSampler"].value = this.gpuCompute.getAlternateRenderTarget(this.divergenceVariable).texture;
         this.outputUniforms["velocitySampler"].value = this.gpuCompute.getAlternateRenderTarget(this.advectVariable).texture;
         this.outputUniforms["pressureSampler"].value = this.gpuCompute.getAlternateRenderTarget(this.jacobiVariable).texture;
     
+        if (isPaused) {
+            this.advectUniforms["velocityOffset"].value = new THREE.Vector3(Math.random() * 10 - 5, Math.random() * 10 - 5, Math.random() * 10 - 5);
+        } else {
+            var d = danceConst * 100;
+            this.advectUniforms["velocityOffset"].value = new THREE.Vector3(Math.random() * d - (d / 2), Math.random() * d - (d / 2), Math.random() * d - (d / 2));
+            this.reactionUniforms["k"].value = Math.max((1 - energyConst) * 0.1, 0.001);
+        }
         // Do computation
         this.gpuCompute.compute();
 
