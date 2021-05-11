@@ -82,6 +82,26 @@ table, tr, td {
   output velocity to alternating materials in the same location. This integration was acutally quite tricky, because support for the GPUComputationRenderer is quite poor, and setting the render targets to work with
   the ping pong buffers for each shader is quite tricky.
 </p>
+<div align="middle">
+  <table style="width=100%">
+      <tr>
+          <td align="middle">
+            <img src="./images/advection.jpg" width="240px" />
+            <figcaption align="middle">Advection Equation for Velocity <i>u</i>. The &nabla represents a three vector of the partial derivative at x, y, z. p represents pressure, and f is external force.</figcaption>
+          </td>
+          <td align="middle">
+            <img src="./images/temperature.jpg" width="240px" />
+            <figcaption align="middle">Equation that represents buoyant force due to temperature differences. The P, m, g, and R terms are represented as a single constant in our shader. T0 is the ambient temperature, and T is the advection temperature.</figcaption>
+          </td>
+      </tr>
+      <tr>
+          <td align="middle">
+              <img src="./images/reactivity.jpg" width="240px" />
+              <figcaption align="middle">The reactivity <i>Y</i>. k is the constant term that is subtracted from the advected reactivity at each step.</figcaption>
+          </td>
+      </tr>
+  </table>
+</div>
 <p>
   We next converted this implementation to 3D, where we indexed into a 2D texture as if it were 3D, similar to the way one might index into a 1D framebuffer as if it were 2D. We then used ray marching to accumulate
   the velocities along a particular ray, and output the resulting accumulated values. It took a bit of fine-tuning to ensure that the fluid simulation displayed with the right amount of color, as it was easy to get
@@ -159,6 +179,19 @@ table, tr, td {
 
 <p>
   TODO: Videos, images, etc.
+  <div align="middle">
+    <table style="width=100%">
+        <tr>
+            <td align="middle">
+                <video width="1280" height="720" controls>
+                    <source src="video/fluid_fire_demo.mp4" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+                <figcaption align="middle">Fluid Fire Demo</figcaption>
+            </td>
+        </tr>
+    </table>
+</div>
 </p>
 
 
