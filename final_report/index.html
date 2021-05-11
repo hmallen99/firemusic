@@ -60,8 +60,39 @@ table, tr, td {
 <p>First, to represent the particles, we decreased the average size of the particles and increased the number of particles added at every timestep in order to make the particles less noticeable and the entire system more dynamic and realistic. We set an initial opacity and color that mimicks the color of the fire, and we randomly generate lifespans. We also set an initial velocity so that the fire does not shoot up unrealistically, nor does it stay so low as to be completely uninteresting.
 </p>
 <p>
-  Second, to update the particle, we update both its attributes and position. For its appearance attributes, we slowly decrease the alpha value the particle fades as it reaches the top of the fire. Then, we update its next location. This involves many forces: rotation, so that particles spin around to create more stoachasticity; gravity; drag; and pressure points. While gravity and drag improve the rendering of the particle system, we found that the fire was not as realistic as we desired, since there was no flickering of flames like in real fires. Thus, we spawned randomly generated pressure points that attract particles nearby. These pressure points are also particles, but they have a different lifespan and do not change positions until their lifespan is used up and a new point is randomly generated to take its place.
+  Second, to update the particle, we update both its attributes and position. For its appearance attributes, we slowly decrease the alpha value the particle fades as it reaches the top of the fire. Then, we update its next location. This involves many forces: rotation, so that particles spin around to create more stoachasticity; gravity; drag; and pressure points. 
 </p>
+<ul>
+  <li>
+    <b>Drag and Gravity </b>
+    <p>
+      We apply drag in the xz axes and gravity in the y axis.
+      We use the drag formula:
+    </p>
+      <br>
+      <center><img src="https://www.thermal-engineering.org/wp-content/uploads/2019/05/drag-force-formula.png" height="150px"></img></center>
+      <br>
+    <p>
+      However, there are a few optimizations we make for our specific particle system. First, the densities are the same. Second, while the sizes of the particle may vary, the variation is incredibly small, so we consider the masses and reference area of our particles to be a constant contributing to the drag coefficient. In that case, instead of calculating the force, we can directly calculate the acceleration, since the mass is constant across all particles. 
+    </p>
+    <p>
+      We implement gravity similarly. Since we assume the particles have near identical mass and shape, we directly subtract off a vector pointing down in the y direction.
+    </p>
+  </li>
+  <li>
+    <b>Pressure Points</b>
+    <center><img src="images/pressure_points.png" height="250px" style="float:right; margin-left: 30px; margin-top:20px"></img></center>
+    <p>
+    While gravity and drag improve the rendering of the particle system, we found that the fire was not as realistic as we desired, since there was no flickering of flames like in real fires. According to a <a href="https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.87.2093&rep=rep1&type=pdf">2005 paper by Sanandanan Somasekaran</a>, "as gases in a fire get hotter, they become less dense than its surrounding air. Thus, the gases move upwards towards a region where the pressure is lower." In order to follow this approach, we decided to generate pressure points to better mimick the tongues of flame.
+  </p>
+  <p>
+    To implement this, we spawned randomly generated pressure points that attract particles nearby. These pressure points are also particles, but they have a different lifespan and do not change positions until their lifespan is used up and a new point is randomly generated to take its place. This greatly improved the rendering of our fire and made it less symmetric. However, since this was inteded to be a WebGL simulation that is accessible and easy to use, we were constrained by the number of pressure points we could use without making the program unbearably slow. THus, while adding more pressure points would have made the fire even more realistic, we simply use 5 pressure points.
+  </p>
+  <p>
+    The diagram to the left illustrates what pressure points look like in the fire simulation. We also chose to simulate pressure points only at the top of the fire in order to reduce computational complexity when running the simulation. 
+  </p>
+  </li>
+</ul>
 <br>
 
 <h3 align="middle">Fire Fluid System</h3>
@@ -156,8 +187,10 @@ table, tr, td {
 
 <h3 align="middle">Embers</h3>
 <p>
-  TODO
+  To generate embers, we likewise created a new ember particle system class, similar to the particle system class implemented for our basic fires. We added changes to our program's fragment shader in order to accommodate our new diffuse textures for each ember particle. The ember particles are then generated randomly around the base of our fires, and rise upwards. To ensure that our embers appear realistic, we adjusted the velocity values of the embers to flow upwards at a slower pace compared to the existing fire particles. Furthermore, we integrated randomized drag forces in the z-direction to simulate real embers floating away from the fire, and lowered the density of our fire ember clusters by adjusting the particle generation frequency based on the timestep of our system. Lastly, we made sure to incorporate values obtained from our audio analysis to adjust the lifetime and velocity of our ember particles accordingly.
 </p>
+
+<center><img src="./images/embers.png" align="middle" height="250px"/></center>
 
 <h3 align="middle">Music Analysis</h3>
 <p>
@@ -170,15 +203,14 @@ table, tr, td {
   Finally, we had some fun with incorporating parts of the Spotify API to make the fires more interactive. Based on the danceability and energy of tracks, we changed the colors of the fire particles and smoke particles. The lower the energy of the track, the lighter the smoke would be. Low danceability also corresponded to bluer flames; medium danceability to green flames; and high danceability to red flames. In order to achieve this effect, we changed the color values, which are interpolated throughout the lifespan of the particle. Thus, a particle can start out as a more saturated blue and slowly fade. [TODO: not sure if this is correct]
 </p>
 
-<h3 align="middle">Misc</h3>
+<h3 align="middle">Special Effects</h3>
 <p>
-  TODO
+  TODO: dance mode
 </p>
 
 <h2 align="middle">Results:</h2>
 
 <p>
-  TODO: Videos, images, etc.
   <div align="middle">
     <table style="width=100%">
         <tr>
@@ -192,6 +224,7 @@ table, tr, td {
         </tr>
     </table>
 </div>
+  TODO: final report video
 </p>
 
 
@@ -203,34 +236,34 @@ table, tr, td {
     <li>WebGL (Three.js)</li>
     <li>Spotify API</li>
     <li>Music MP3s</li>
+    <li>Analyser Node (FFT)</li>
   </ul>
   <li>Hardware</li>
   <ul>
     <li>Laptops: GTX 1050 and GTX 1650 Mobile GPUs</li>
   </ul>
-  <li>Links TODO Update</li>
+  <li>Links Update</li>
   <ul>
     <li><a href="http://ryansumner.github.io/FireParticles/">OpenGL Particles</a></li>
     <li><a href="https://cs184-firesim.github.io/final-report/">Previous year's report</a></li>
-    <li><a href="https://learnopengl.com/In-Practice/2D-Game/Particles">OpenGL Particles</a></li>
+    <a href="https://github.com/simondevyoutube/ThreeJS_Tutorial_ParticleSystems">YouTube Particle System Demo</a>
     <li><a href="https://developer.spotify.com/documentation/web-api/reference/#endpoint-get-audio-analysis">Spotify API Audio Analysis</a></li>
-    <li><a href="http://www.sci.utah.edu/~vpegorar/research/2006_EGWNP.pdf">Research</a></li>
-    <li><a href="http://graphics.ucsd.edu/~henrik/papers/fire/fire.pdf">Physics-Based Fire</a></li>
+    <li><a href="https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.87.2093&rep=rep1&type=pdf">2005 paper by Sanandanan Somasekaran on Particle Systems for Fire</a></li>
     <li><a href="https://developer.nvidia.com/gpugems/gpugems3/part-v-physics-simulation/chapter-30-real-time-simulation-and-rendering-3d-fluids">Nvidia GPU Gems Navier Stokes</a></li>
     <li><a href="https://www.shadertoy.com/view/ldd3WS">Navier Stokes shadertoy</a></li>
   </ul>
 </ul>
 <h2 align="middle">Contributions</h2>
 <p>
-  Henry: I implemented the fluid-based fire simulation, and added the particle smoke to the particle-based fire. For the fire simulation, (1) I integrated the base Navier Stokes shaders into the THREE.js web framework,
+  <b>Henry</b>: I implemented the fluid-based fire simulation, and added the particle smoke to the particle-based fire. For the fire simulation, (1) I integrated the base Navier Stokes shaders into the THREE.js web framework,
   (2) transformed the original 2D shaders into 3D shaders and added a ray-marching renderer for the 3D output, (3) Added temperature advection and reactivity advection shader passes to the renderer to make our fluid simulation
   a fire simulation, and (4) added some parameters from the audio analysis tool that my teammates built to modulate reactivity and add random perturbations to the fire.
   <br>
-  Priyanka:
+  <b>Priyanka</b>:
   <br>
-  Hannah:
+  <b>Hannah</b>: I worked on creating the ember particle system, and optimized the efficiency of our rendering program. For the ember particle system, I incorporated changes to the program's fragment shader to accommodate our new ember textures, modified parameters such as drag forces to allow the embers to rise realistically, and finally adjusted the amplitude and velocity parameters of the system to work with the audio input variables. To improve the efficiency of our code, I made adjustments to our particle rendering algorithm to minimize heavy operations such as particle sorting and iteration.
   <br>
-  Amber:
+  <b>Amber</b>: I introduced the main particle system and worked on making the fire particle system more realistic. This involved manipulating drag, gravity, particle attributes like size, pressure points and more. After connecting the FFT to our fire simulation, I worked on making the fires more reactive to changes in music. I changed the frequencies each fire would respond to by focusing on lower frequencies, since those are more interesting to look at. I changed some small parameters to make the fire more realistic. I also worked on some design aspects, like changing the color or smokiness of the fire with Spotify API data. 
 </p>
 </body>
 </html>
