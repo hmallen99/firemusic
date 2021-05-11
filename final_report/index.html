@@ -136,8 +136,10 @@ table, tr, td {
 
 <h3 align="middle">Embers</h3>
 <p>
-  TODO
+  To generate embers, we likewise created a new ember particle system class, similar to the particle system class implemented for our basic fires. We added changes to our program's fragment shader in order to accommodate our new diffuse textures for each ember particle. The ember particles are then generated randomly around the base of our fires, and rise upwards. To ensure that our embers appear realistic, we adjusted the velocity values of the embers to flow upwards at a slower pace compared to the existing fire particles. Furthermore, we integrated randomized drag forces in the z-direction to simulate real embers floating away from the fire, and lowered the density of our fire ember clusters by adjusting the particle generation frequency based on the timestep of our system. Lastly, we made sure to incorporate values obtained from our audio analysis to adjust the lifetime and velocity of our ember particles accordingly.
 </p>
+
+<center><img src="./images/embers.png" align="middle"/></center>
 
 <h3 align="middle">Music Analysis</h3>
 <p>
@@ -150,9 +152,9 @@ table, tr, td {
   Finally, we had some fun with incorporating parts of the Spotify API to make the fires more interactive. Based on the danceability and energy of tracks, we changed the colors of the fire particles and smoke particles. The lower the energy of the track, the lighter the smoke would be. Low danceability also corresponded to bluer flames; medium danceability to green flames; and high danceability to red flames. In order to achieve this effect, we changed the color values, which are interpolated throughout the lifespan of the particle. Thus, a particle can start out as a more saturated blue and slowly fade. [TODO: not sure if this is correct]
 </p>
 
-<h3 align="middle">Misc</h3>
+<h3 align="middle">Special Effects</h3>
 <p>
-  TODO
+  TODO: dance mode
 </p>
 
 <h2 align="middle">Results:</h2>
@@ -195,7 +197,7 @@ table, tr, td {
   <br>
   Priyanka:
   <br>
-  Hannah:
+  Hannah: I worked on creating the ember particle system, and optimized the efficiency of our rendering program. For the ember particle system, I incorporated changes to the program's fragment shader to accommodate our new ember textures, modified parameters such as drag forces to allow the embers to rise realistically, and finally adjusted the amplitude and velocity parameters of the system to work with the audio input variables. To improve the efficiency of our code, I made adjustments to our particle rendering algorithm to minimize heavy operations such as particle sorting and iteration.
   <br>
   Amber:
 </p>
