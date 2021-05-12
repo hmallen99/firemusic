@@ -91,6 +91,7 @@ table, tr, td {
   <p>
     The diagram to the left illustrates what pressure points look like in the fire simulation. We also chose to simulate pressure points only at the top of the fire in order to reduce computational complexity when running the simulation. 
   </p>
+  <center><img src="./images/tongues.png" align="middle" height="250px"/></center>
   </li>
 </ul>
 <br>
@@ -150,6 +151,20 @@ table, tr, td {
   medium, and blue loud. We then used the danceability parameter to add random perturbations to the fire to make it move around a lot more. A higher danceability led to crazier fires. Finally, we used the energy constant
   to modulate the reactivity constant of the fire. Higher energy meant fires had a smaller decrease in reactivity at each time step, meaning they would get taller and wider.
 </p>
+<div align="middle">
+    <table style="width=100%">
+        <tr>
+            <td align="middle">
+                <img src="./images/fluidreg.png" width="480px" />
+                <figcaption align="middle">No Music</figcaption>
+            </td>
+            <td align="middle">
+                <img src="./images/fluidcolor.png" width="480px" />
+                <figcaption align="middle">With Music</figcaption>
+            </td>
+        </tr>
+    </table>
+</div>
 <h4>Challenges</h4>
 <p>
   We faced numerous challenges implementing the fluid simulation.
@@ -184,6 +199,7 @@ table, tr, td {
   decrease towards the top of the fire, such that our additive alpha blending does not result in overwritten smoke particles. The alpha blending implementation was adapted from <a href=https://github.com/simondevyoutube/ThreeJS_Tutorial_BlendModes/blob/master/main.js>here</a>.
   Our implementation differed by changing the color, amount, and height of the smoke, as well as the inclusion of the same realistic pressure dynamics acting on our particle fire implementation. 
 </p>
+<center><img src="./images/smoke.png" align="middle" height="250px"/></center>
 
 <h3 align="middle">Embers</h3>
 <p>
@@ -194,37 +210,85 @@ table, tr, td {
 
 <h3 align="middle">Music Analysis</h3>
 <p>
-  Once we connected the fires with the music, we had various stylistic and technical choices. First, we had to decide how to visualize the music. For this, we used TODO: write more about get byte frequencies. After using the FFT, we chose a number of frequencies to represent. We found that higher frequencies are very sensitive and are not very interesting to look at, so to determine which frequency to look at, we used an exponential function that takes in the fire index and returned an index of the FFT array. This ensured that more of the fires reflected lower frequencies, while were still a few that captured the higher frequencies.
-</p>
-<p>
-  Then, we had to make some design choices about the fire. In order to freflect a higher magnitude of a frequency, we chose to increase the velocity and lifespan of particles in that fire. That meant the fire would be much taller than the other fires. We encountered various problems trying to make the fire look realistic at various heights while also not being too computationally expensive. At the end, we settled on a range of parameters that seemed appropriate and balanced our main concerns.
-</p>
-<p>
-  Finally, we had some fun with incorporating parts of the Spotify API to make the fires more interactive. Based on the danceability and energy of tracks, we changed the colors of the fire particles and smoke particles. The lower the energy of the track, the lighter the smoke would be. Low danceability also corresponded to bluer flames; medium danceability to green flames; and high danceability to red flames. In order to achieve this effect, we changed the color values, which are interpolated throughout the lifespan of the particle. Thus, a particle can start out as a more saturated blue and slowly fade. [TODO: not sure if this is correct]
-</p>
+  Once we connected the fires with the music, we had various stylistic and technical choices. First, we had to decide how to visualize the music. For this, we used the JavaScript Web Audio API, which allowed us to reference the HTML audio player we inserted into the HTML body and create a new AudioContext. With the AudioContext, we connected the audio source, which was the media player, and an AnalyserNode. The AnalyserNode is able to provide us with real-time frequency and time-domain analysis information.
+  <br><center><img src="./images/analyser.png" align="middle" height="250px"/></center><br>
 
-<h3 align="middle">Special Effects</h3>
-<p>
-  TODO: dance mode
+  We decided to use a window size of 256 samples for Fast Fourier Transform to get the audio's frequency domain data.  After using the FFT, we chose a number of frequencies to represent. This is because a low resolution would be able to run smoothly with WebGL and still showcase the different frequencies. We found that higher frequencies are very sensitive and are not very interesting to look at, so to determine which frequency to look at, we used an exponential function that takes in the fire index and returned an index of the FFT array. This ensured that more of the fires reflected lower frequencies, while were still a few that captured the higher frequencies.
 </p>
-
-<h2 align="middle">Results:</h2>
-
 <p>
-  <div align="middle">
+  Then, we had to make some design choices about the fire. In order to reflect a higher magnitude of a frequency, we chose to increase the velocity and lifespan of particles in that fire. That meant the fire would be much taller than the other fires. We encountered various problems trying to make the fire look realistic at various heights while also not being too computationally expensive. At the end, we settled on a range of parameters that seemed appropriate and balanced our main concerns.
+</p>
+<p>
+  Finally, we had some fun with incorporating parts of the Spotify Web API to make the fires more interactive. In order to integrate the Spotify Web API, we had to make two main asynchronous calls: one for authentication with the Client-Credentials Authentication Flow (the user does not have to authorize their Spotify account, rather we can use our own token as need since we do not require private user data), and another for calling both the Spotify Search and Audio Features API to retrieve the ID of the track title/artist entered by the user and its audio features (danceability and energy).<br>
+   <center><img src="./images/spotifycredentials.png" align="middle" height="480px"/></center><br>
+  Based on the danceability and energy of tracks, we changed the colors of the fire particles and smoke particles. The lower the energy of the track, the lighter the smoke would be. Low danceability also corresponded to cooler-toned (blue) flames; medium danceability to green flames; and high danceability to warmer-toned (red) flames. In order to achieve this effect, we changed the color values, which are interpolated throughout the lifespan of the particle. Thus, a particle can start out as a more saturated blue and slowly fade.
+</p>
+<div align="middle">
     <table style="width=100%">
         <tr>
             <td align="middle">
-                <video width="1280" height="720" controls>
-                    <source src="video/fluid_fire_demo.mp4" type="video/mp4">
-                    Your browser does not support the video tag.
-                </video>
-                <figcaption align="middle">Fluid Fire Demo</figcaption>
+                <img src="./images/funkyspotify.gif" width="480px" />
+                <figcaption align="middle">Song: Funky Galileo, Sure Sure (high danceability --> warm tones)</figcaption>
+            </td>
+            <td align="middle">
+                <img src="./images/ghostinspotify.gif" width="480px" />
+                <figcaption align="middle">Song: Ghostin, Ariana Grande (low danceability --> cool tones)</figcaption>
             </td>
         </tr>
     </table>
 </div>
-  TODO: final report video
+
+<h3 align="middle">Special Effects: Dance Mode</h3>
+<p>
+  For fun, we added a dance mode to our simulation which, when toggled, brings the camera perspective closer to the fire, randomly varies the z-index of the embers, and increases the lifetime of a particle in order to simulate an immersive environment.
+  <center><img src="./images/dancemode.gif" align="middle" height="480px"/></center><br>
+</p>
+<h4>Challenges & Things We Learned</h4>
+<p>
+  While implementing a music-reactive real-time fire simulation, we definitely realized that fire simulation is difficult, but rewarding.
+  <ol>
+    <li>
+      We built upon our basic understanding of OpenGL from the class projects, especially the Cloth Simulation Project. We specifically had to learn how to use the THREE.js WebGL framework, as well just JavaScript basics to make our simulation interactive. 
+    </li>
+    <li>
+      We learned many technical concepts related to the physical properties of fluid, fire, and their simulation, including particle system pipelines, velocity advection, Navier-Stokes, buoyancy, drag, pressure points, among others. Making the fire realistic was definitely challenging, as we have to balance the tradeoff between realism and browser performance (especially since the animation loop required a lot of computation and not all users have a local GPU). There were other technical methods that we tried to implement to make the particle fire realistic, but aesthetically did not work well, such as Perlin Noise implemented in the fragment shader, which we ended up taking out.
+    </li>
+    <li>
+      We also learned how to compute the FFT of an audio clip with JavaScript through the integration of various APIs, as well as learning how to perform asynchronous API calls through Web Service HTTP calls and fetching their JSON response. This was the first time any of us had used the Spotify Web API, so learning how to authenticate the call through their Client-Credentials Authentication Flow was quite challenging.
+    </li>
+  </ol>
+</p>
+<h2 align="middle">Results:</h2>
+<h3 align="middle">Try out our <a href="https://pkargupta.github.io/firemusic">demo</a>.</h3>
+<p>
+  <div align="middle">
+    <table style="width=100%">
+    	<tr>
+            <td align="middle">
+            	<h3 align="middle">Final Video</h3>
+            	<iframe width="1280" height="720" src="https://www.youtube.com/embed/xUTcMKkWito" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            </td>
+        </tr>
+    	<tr>
+        	<td align="middle">
+        		<h3 align="middle">Particle Fire Demo</h3>
+                <video width="1280" height="720" poster="images/particlethumbnail.png" controls>
+                    <source src="video/particledemo.mp4" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+            </td>
+        </tr>
+        <tr>
+            <td align="middle">
+            	<h3 align="middle">Fluid Fire Demo</h3>
+                <video width="1280" height="720" controls>
+                    <source src="video/fluid_fire_demo.mp4" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+            </td>
+        </tr>
+    </table>
+</div>
 </p>
 
 
@@ -234,7 +298,7 @@ table, tr, td {
   <li>Software Resources</li>
   <ul>
     <li>WebGL (Three.js)</li>
-    <li>Spotify API</li>
+    <li>Spotify Web API</li>
     <li>Music MP3s</li>
     <li>Analyser Node (FFT)</li>
   </ul>
@@ -251,6 +315,8 @@ table, tr, td {
     <li><a href="https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.87.2093&rep=rep1&type=pdf">2005 paper by Sanandanan Somasekaran on Particle Systems for Fire</a></li>
     <li><a href="https://developer.nvidia.com/gpugems/gpugems3/part-v-physics-simulation/chapter-30-real-time-simulation-and-rendering-3d-fluids">Nvidia GPU Gems Navier Stokes</a></li>
     <li><a href="https://www.shadertoy.com/view/ldd3WS">Navier Stokes shadertoy</a></li>
+    <li><a href="https://developer.spotify.com/documentation/general/guides/authorization-guide/">Spotify Web API Authorization Guide</a></li>
+    <li><a href="https://developer.mozilla.org/en-US/docs/Web/API/AnalyserNode">WebAudio API AnalyserNode Documentation</a></li>
   </ul>
 </ul>
 <h2 align="middle">Contributions</h2>
@@ -259,7 +325,7 @@ table, tr, td {
   (2) transformed the original 2D shaders into 3D shaders and added a ray-marching renderer for the 3D output, (3) Added temperature advection and reactivity advection shader passes to the renderer to make our fluid simulation
   a fire simulation, and (4) added some parameters from the audio analysis tool that my teammates built to modulate reactivity and add random perturbations to the fire.
   <br>
-  <b>Priyanka</b>:
+  <b>Priyanka</b>: I implemented the user interface and music audio analysis through the integration of the JS WebAudio API, specifically using the AudioContext and AnalyserNode to compute FFT and integrating the return frequencies within the window size into our particle system. I linked the two together as well. Additionally, I integrated the Spotify Web API into the application, writing the asynchronous API calls for performing Authentication using the Client-Credentials Authentication Flow, making the Spotify Search API call for fetching the ID of the user-specified track, and using the Spotify Audio Features API for retrieving the JSON response for the track's audio features (e.g. danceability, energy). I also implemented the dance mode/immersive mode. I also helped make the particle fire more realistic through modifying the velocity, number/size of particles, and etc as well as implementing the initial RGB spline for the flame colors. I had also implemented Perlin Noise for the fragment shader in order to make the fire look more realistic, although we ended up removing it for aesthetic purposes. Finally, I did video production/editing for the project.
   <br>
   <b>Hannah</b>: I worked on creating the ember particle system, and optimized the efficiency of our rendering program. For the ember particle system, I incorporated changes to the program's fragment shader to accommodate our new ember textures, modified parameters such as drag forces to allow the embers to rise realistically, and finally adjusted the amplitude and velocity parameters of the system to work with the audio input variables. To improve the efficiency of our code, I made adjustments to our particle rendering algorithm to minimize heavy operations such as particle sorting and iteration.
   <br>
