@@ -8,7 +8,7 @@ import {
 	particleVertexShader,
 	particleFragmentShader,
 	emberFragmentShader
-} from './particleShaders.js';
+} from './shaders/particleShaders.js';
 
 // Spotify API Integration:
 async function authorize(){

@@ -2,6 +2,15 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.127/build/three.mod
 
 import { GPUComputationRenderer } from 'https://cdn.jsdelivr.net/npm/three@0.127/examples/jsm/misc/GPUComputationRenderer.js';
 
+import {boxVert} from "./shaders/boxVert.js";
+import {boxFrag} from "./shaders/boxFrag.js";
+import {advectFrag} from "./shaders/advectFrag.js";
+import {divergenceFrag} from "./shaders/divergenceFrag.js";
+import {jacobiFrag} from "./shaders/jacobiFrag.js";
+import {reactionFrag} from "./shaders/reactionFrag.js";
+import {outputFrag} from "./shaders/outputFrag.js";
+import {temperatureFrag} from "./shaders/temperatureFrag.js";
+
 const WIDTH = 64;
 
 class FluidFireSystem {
@@ -34,7 +43,6 @@ class FluidFireSystem {
 		// Initialize the fire box
 		const boxGeometry = new THREE.BoxGeometry(2, 2, 2);
 
-
 		this.boxMaterial = new THREE.RawShaderMaterial({
 			glslVersion: THREE.GLSL3,
 			uniforms: {
@@ -45,8 +53,8 @@ class FluidFireSystem {
 				reactionSampler: {value: null},
 				colorMod: {value: new THREE.Vector3(1.0, 0.5, 0.25)},
 			},
-			vertexShader: document.getElementById('boxVertexShader').textContent,
-			fragmentShader: document.getElementById('boxFragmentShader').textContent,
+			vertexShader: boxVert,
+			fragmentShader: boxFrag,
 			blending: THREE.AdditiveBlending,
 		});
 
@@ -60,8 +68,8 @@ class FluidFireSystem {
 				reactionSampler: {value: null},
 				colorMod: {value: new THREE.Vector3(1.0, 0.5, 0.25)},
 			},
-			vertexShader: document.getElementById('boxVertexShader').textContent,
-			fragmentShader: document.getElementById('boxFragmentShader').textContent,
+			vertexShader: boxVert,
+			fragmentShader: boxFrag,
 			blending: THREE.AdditiveBlending,
 		});
 
@@ -110,7 +118,7 @@ class FluidFireSystem {
 		var blockRes = new THREE.Vector3(WIDTH, WIDTH, WIDTH);
 
 		// Initialize Temperature Advection Shader
-		this.temperatureVariable = this.gpuCompute.addVariable("temperatureSampler", document.getElementById("temperatureShader").textContent, temperatureMap);
+		this.temperatureVariable = this.gpuCompute.addVariable("temperatureSampler", temperatureFrag, temperatureMap);
 		this.temperatureUniforms = this.temperatureVariable.material.uniforms;
 		this.temperatureUniforms["timestep"] = {value: 0.1};
 		this.temperatureUniforms["blockRes"] = {value: blockRes};
@@ -119,7 +127,7 @@ class FluidFireSystem {
 		this.gpuCompute.addResolutionDefine(this.temperatureVariable.material);
 
 		// Initialize Reaction Advection Shader
-		this.reactionVariable = this.gpuCompute.addVariable("reactionSampler", document.getElementById("reactionShader").textContent, reactionMap);
+		this.reactionVariable = this.gpuCompute.addVariable("reactionSampler", reactionFrag, reactionMap);
 		this.reactionUniforms = this.reactionVariable.material.uniforms;
 		this.reactionUniforms["timestep"] = {value: 0.1};
 		this.reactionUniforms["blockRes"] = {value: blockRes};
@@ -129,7 +137,7 @@ class FluidFireSystem {
 		this.gpuCompute.addResolutionDefine(this.reactionVariable.material);
 
 		// Initialize Velocity Advection Shader
-		this.advectVariable = this.gpuCompute.addVariable("velocitySampler", document.getElementById("advectShader").textContent, velocityMap);
+		this.advectVariable = this.gpuCompute.addVariable("velocitySampler", advectFrag, velocityMap);
 		this.advectUniforms = this.advectVariable.material.uniforms;
 		this.advectUniforms["timestep"] = {value: 0.1};
 		this.advectUniforms["b"] = {value: -10};
@@ -142,7 +150,7 @@ class FluidFireSystem {
 		this.advectVariable.magFilter = THREE.LinearFilter;
 
 		// Initialize Divergence Shader
-		this.divergenceVariable = this.gpuCompute.addVariable("divergenceSampler", document.getElementById("divergenceShader").textContent, divergenceMap);
+		this.divergenceVariable = this.gpuCompute.addVariable("divergenceSampler", divergenceFrag, divergenceMap);
 		this.gpuCompute.setVariableDependencies(this.divergenceVariable, [this.divergenceVariable]);
 		this.divergenceUniforms = this.divergenceVariable.material.uniforms;
 		this.divergenceUniforms["velocitySampler"] = {value: null};
@@ -152,7 +160,7 @@ class FluidFireSystem {
 		this.divergenceVariable.magFilter = THREE.LinearFilter;
 
 		// Initialize Jacobi Pressure Shader
-		this.jacobiVariable = this.gpuCompute.addVariable("pressureSampler", document.getElementById("jacobiShader").textContent, pressureMap);
+		this.jacobiVariable = this.gpuCompute.addVariable("pressureSampler", jacobiFrag, pressureMap);
 		this.gpuCompute.setVariableDependencies(this.jacobiVariable, [this.jacobiVariable]);
 		this.jacobiUniforms = this.jacobiVariable.material.uniforms;
 		this.jacobiUniforms["velocitySampler"] = {value: null};
@@ -163,7 +171,7 @@ class FluidFireSystem {
 		this.jacobiVariable.magFilter = THREE.LinearFilter;
 
 		// Initialize Velocity Output Sampler. This is the input for the next shader iteration
-		this.outputVariable = this.gpuCompute.addVariable("velocityOutputSampler", document.getElementById("outputShader").textContent, outputMap);
+		this.outputVariable = this.gpuCompute.addVariable("velocityOutputSampler", outputFrag, outputMap);
 		this.gpuCompute.setVariableDependencies(this.outputVariable, [this.outputVariable]);
 		this.outputUniforms = this.outputVariable.material.uniforms;
 		this.outputUniforms["velocitySampler"] = {value: null};
