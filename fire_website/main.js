@@ -1,6 +1,5 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.127/build/three.module.js';
 
-import {GLTFLoader} from 'https://cdn.jsdelivr.net/npm/three@0.118.1/examples/jsm/loaders/GLTFLoader.js';
 import {OrbitControls} from 'https://cdn.jsdelivr.net/npm/three@0.127/examples/jsm/controls/OrbitControls.js';
 import {GUI} from 'https://cdn.jsdelivr.net/npm/three@0.127/examples/jsm/libs/dat.gui.module.js';
 import FluidFireSystem from './FluidFireSystem.js';
@@ -30,141 +29,116 @@ void main() {
 }`;
 
 const _FS = [
+	"uniform sampler2D diffuseTexture;",
+	"varying vec4 vColour;",
+	"varying vec2 vAngle;",
+	"varying float vBlend;",
 
-"uniform sampler2D diffuseTexture;",
-"varying vec4 vColour;",
-"varying vec2 vAngle;",
-"varying float vBlend;",
-
-"void main() {",
-  "vec2 coords = (gl_PointCoord - 0.5) * mat2(vAngle.x, vAngle.y, -vAngle.y, vAngle.x) + 0.5;",
-  "gl_FragColor = texture2D(diffuseTexture, coords) * vColour;",
-  "gl_FragColor *= gl_FragColor.w;",
-  "gl_FragColor.w *= vBlend;",
-"}",
+	"void main() {",
+		"vec2 coords = (gl_PointCoord - 0.5) * mat2(vAngle.x, vAngle.y, -vAngle.y, vAngle.x) + 0.5;",
+		"gl_FragColor = texture2D(diffuseTexture, coords) * vColour;",
+		"gl_FragColor *= gl_FragColor.w;",
+		"gl_FragColor.w *= vBlend;",
+	"}",
 ].join("\n");
 
 const _FS_2 = [
+	"uniform sampler2D diffuseTexture;",
+	"varying vec4 vColour;",
+	"varying vec2 vAngle;",
+	"varying float vBlend;",
 
-    "uniform sampler2D diffuseTexture;",
-    "varying vec4 vColour;",
-    "varying vec2 vAngle;",
-    "varying float vBlend;",
-    
-    "void main() {",
-      "vec2 coords = (gl_PointCoord - 0.5) * mat2(vAngle.x, vAngle.y, -vAngle.y, vAngle.x) + 0.5;",
-      "gl_FragColor = texture2D(diffuseTexture, coords) * vColour;",
-    "}",
-    ].join("\n");
+	"void main() {",
+		"vec2 coords = (gl_PointCoord - 0.5) * mat2(vAngle.x, vAngle.y, -vAngle.y, vAngle.x) + 0.5;",
+		"gl_FragColor = texture2D(diffuseTexture, coords) * vColour;",
+	"}",
+].join("\n");
 
-// Spotify API Integration: 
-
+// Spotify API Integration:
 async function authorize(){
-        let myHeaders = new Headers();
-        var my_clientID = '03bbc4ece6d945009d5607c6958b26ac';
-        var clientSecret = 'ecbaf00f9fd947ecac83a873e6a7e014';
-        myHeaders.append("Authorization", 'Basic ' + btoa(my_clientID + ':' + clientSecret));
-        myHeaders.append("Content-Type", "application/x-www-form-urlencoded");
-        var urlencoded = new URLSearchParams();
-        urlencoded.append("grant_type", "client_credentials");
+	let myHeaders = new Headers();
+	var my_clientID = '03bbc4ece6d945009d5607c6958b26ac';
+	var clientSecret = 'ecbaf00f9fd947ecac83a873e6a7e014';
+	myHeaders.append("Authorization", 'Basic ' + btoa(my_clientID + ':' + clientSecret));
+	myHeaders.append("Content-Type", "application/x-www-form-urlencoded");
+	var urlencoded = new URLSearchParams();
+	urlencoded.append("grant_type", "client_credentials");
 
-        const requestOptions = {
-        method: 'POST',
-        headers: myHeaders,
-        body: urlencoded,
-        redirect: 'follow'
-        }
-        
-        let res = await fetch("https://accounts.spotify.com/api/token", requestOptions);
-        res = await res.json();
-        return res.access_token; 
-    }
+	const requestOptions = {
+	method: 'POST',
+	headers: myHeaders,
+	body: urlencoded,
+	redirect: 'follow'
+	}
+
+	let res = await fetch("https://accounts.spotify.com/api/token", requestOptions);
+	res = await res.json();
+	return res.access_token;
+}
 
 async function search(title, art_name){
-        const access_token = await authorize();
-        //this.setState({access_token});
-        const BASE_URL = 'https://api.spotify.com/v1/search';
-        var track = 'track:' + title;
-        var artist = 'artist:' + art_name;
-        if (artist == 'artist:') {
-            artist = ''; 
-        }
-        if (track == 'track:') {
-            track = '';
-        }
-        let FETCH_URL = BASE_URL + '?q=' + track + '%20' + artist  + '&type=track&limit=1'; 
-        //const ALBUM_URL = 'https://api.spotify.com/v1/artists';
+	const access_token = await authorize();
+	//this.setState({access_token});
+	const BASE_URL = 'https://api.spotify.com/v1/search';
+	var track = 'track:' + title;
+	var artist = 'artist:' + art_name;
+	if (artist == 'artist:') {
+		artist = '';
+	}
+	if (track == 'track:') {
+		track = '';
+	}
+	let FETCH_URL = BASE_URL + '?q=' + track + '%20' + artist  + '&type=track&limit=1';
+	//const ALBUM_URL = 'https://api.spotify.com/v1/artists';
 
-        let myHeaders = new Headers();
-        myHeaders.append("Authorization", `Bearer ${access_token}`);
-        
-        const requestOptions = {
-            method: 'GET',
-            headers: myHeaders
-        }
+	let myHeaders = new Headers();
+	myHeaders.append("Authorization", `Bearer ${access_token}`);
 
-        let res = await fetch(FETCH_URL, requestOptions);
-        res = await res.json();
-        let id = res.tracks.items[0].id;
+	const requestOptions = {
+		method: 'GET',
+		headers: myHeaders
+	}
 
-        const BASE_URL_T = 'https://api.spotify.com/v1/audio-features/';
-        let FETCH_URL_T = BASE_URL_T + id; 
+	let res = await fetch(FETCH_URL, requestOptions);
+	res = await res.json();
+	let id = res.tracks.items[0].id;
 
-        myHeaders = new Headers();
-        myHeaders.append("Authorization", `Bearer ${access_token}`);
-        
-        const requestOptions_T = {
-            method: 'GET',
-            headers: myHeaders
-        }
+	const BASE_URL_T = 'https://api.spotify.com/v1/audio-features/';
+	let FETCH_URL_T = BASE_URL_T + id;
 
-        let res_T = await fetch(FETCH_URL_T, requestOptions_T);
-        res_T = await res_T.json();
-        return res_T;
+	myHeaders = new Headers();
+	myHeaders.append("Authorization", `Bearer ${access_token}`);
+
+	const requestOptions_T = {
+		method: 'GET',
+		headers: myHeaders
+	}
+
+	let res_T = await fetch(FETCH_URL_T, requestOptions_T);
+	res_T = await res_T.json();
+	return res_T;
 }
-
-// Audio Analysis
-
-function fractionate(val, minVal, maxVal) {
-    return (val - minVal)/(maxVal - minVal);
-}
-
-function modulate(val, minVal, maxVal, outMin, outMax) {
-    var fr = fractionate(val, minVal, maxVal);
-    var delta = outMax - outMin;
-    return outMin + (fr * delta);
-}
-
-function avg(arr){
-    var total = arr.reduce(function(sum, b) { return sum + b; });
-    return (total / arr.length);
-}
-
-function max(arr){
-    return arr.reduce(function(a, b){ return Math.max(a, b); })
-}
-
 
 var dataArray;
 var analyser;
 var audio;
 // the main visualiser function
 var vizInit = function (){
-  
   var file = document.getElementById("thefile");
   audio = document.getElementById("audio");
   var fileLabel = document.querySelector("label.file");
-  
+
   document.onload = function(e){
     console.log(e);
     audio.play();
     play();
   }
+
   file.onchange = function(){
     fileLabel.classList.add('normal');
     audio.classList.add('active');
     var files = this.files;
-    
+
     audio.src = URL.createObjectURL(files[0]);
     audio.load();
     audio.play();
@@ -172,8 +146,8 @@ var vizInit = function (){
     _APP._onAudioChange();
     // add to number of fires here and start audio analysis
   }
-  
-function play() {
+
+	function play() {
     var context = new AudioContext();
     var src = context.createMediaElementSource(audio);
     analyser = context.createAnalyser();
@@ -183,9 +157,11 @@ function play() {
     var bufferLength = analyser.frequencyBinCount;
     dataArray = new Uint8Array(bufferLength);
     audio.play();
-    };}
-    window.onload = vizInit();
-    
+	};
+}
+
+window.onload = vizInit();
+
 // Particle Implementation
 class LinearSpline {
   constructor(lerp) {
@@ -305,7 +281,7 @@ class ParticleSystem {
     } else {
       this._colourSpline.AddPoint(0.0, new THREE.Color(0xFFFF80));
     }
-    
+
     this._colourSpline.AddPoint(1.0, new THREE.Color(0xFF8080));
 
     this._colourSplineS = new LinearSpline((t, a, b) => {
@@ -324,7 +300,7 @@ class ParticleSystem {
     this._sizeSpline.AddPoint(1.0, 1.0);
 
     document.addEventListener('keyup', (e) => this._onKeyUp(e), false);
-  
+
     this._UpdateGeometry();
 
     this._stop = false;
@@ -444,7 +420,7 @@ class ParticleSystem {
         'angle', new THREE.Float32BufferAttribute(angles, 1));
     this._geometry.setAttribute(
         'blend', new THREE.Float32BufferAttribute(blends, 1));
-  
+
     this._geometry.attributes.position.needsUpdate = true;
     this._geometry.attributes.size.needsUpdate = true;
     this._geometry.attributes.colour.needsUpdate = true;
@@ -484,7 +460,7 @@ class ParticleSystem {
         p.currentSize = p.size * this._sizeSpline.Get(t);
         p.colour.copy(this._colourSplineS.Get(t));
       }
-      
+
 
       p.position.add(p.velocity.clone().multiplyScalar(timeElapsed));
 
@@ -534,9 +510,9 @@ class ParticleSystem {
         // Range of fireheight is from 0 to 255
         var fireheight = Math.max(Math.exp(0.0162 * dataArray[buffer_index])*4 + Math.random() * 5, 15);
 
-        var r; 
-        var g; 
-        var b; 
+        var r;
+        var g;
+        var b;
         if (this.danceability < 0.4) {
           // Low danceability -> more blue
           r = Math.random() * 50 + 20;
@@ -626,10 +602,8 @@ class EmberSystem {
     this._alphaSpline = new LinearSpline((t, a, b) => {
       return a + t * (b - a);
     });
-    //this._alphaSpline.AddPoint(0.0, 0.0);
+
     this._alphaSpline.AddPoint(0.1, 1.0);
-    //this._alphaSpline.AddPoint(0.6, 1.0);
-    //this._alphaSpline.AddPoint(1.0, 0.0);
 
     this._colourSpline = new LinearSpline((t, a, b) => {
       const c = a.clone();
@@ -643,18 +617,11 @@ class EmberSystem {
     } else {
       this._colourSpline.AddPoint(0.0, new THREE.Color(0xFFFF80));
     }
-    
+
     this._colourSpline.AddPoint(1.0, new THREE.Color(0xFF8080));
 
-    // this._sizeSpline = new LinearSpline((t, a, b) => {
-    //   return a + t * (b - a);
-    // });
-    // this._sizeSpline.AddPoint(0.0, 1.0);
-    // this._sizeSpline.AddPoint(0.5, 5.0);
-    // this._sizeSpline.AddPoint(1.0, 1.0);
-
     document.addEventListener('keyup', (e) => this._onKeyUp(e), false);
-  
+
     this._UpdateGeometry();
 
     this._stop = false;
@@ -729,7 +696,7 @@ class EmberSystem {
         'colour', new THREE.Float32BufferAttribute(colours, 4));
     this._geometry.setAttribute(
         'angle', new THREE.Float32BufferAttribute(angles, 1));
-  
+
     this._geometry.attributes.position.needsUpdate = true;
     this._geometry.attributes.size.needsUpdate = true;
     this._geometry.attributes.colour.needsUpdate = true;
@@ -851,7 +818,7 @@ class ParticleSystemDemo {
         this.params.energy = feats.energy;
         d_control = gui.add(this.params, "danceability", 0, 1).name("Danceability");
         e_control = gui.add(this.params, "energy", 0, 1).name("Energy");
-        
+
     }).catch(e => {
         // error
         console.log(e);
@@ -864,19 +831,19 @@ class ParticleSystemDemo {
             d_control.setValue(demo.params.danceability);
             demo.params.energy = feats.energy;
             e_control.setValue(demo.params.energy);
-        
+
         }).catch(e => {
             // error
             console.log(e);
         });
     }
-    
+
     var demo = this;
-    var submit = { submit:function(){ 
+    var submit = { submit:function(){
         updatefeats(demo);
     }};
     gui.add(submit,'submit').name("Search Spotify");
-   
+
 
     const fov = 60;
     const aspect = 1920 / 1080;
@@ -912,15 +879,6 @@ class ParticleSystemDemo {
     controls.target.set(0, 0, 0);
     controls.update();
 
-    //const loader = new THREE.CubeTextureLoader();
-    /*const texture = loader.load([
-        './resources/posx.jpg',
-        './resources/negx.jpg',
-        './resources/posy.jpg',
-        './resources/negy.jpg',
-        './resources/posz.jpg',
-        './resources/negz.jpg',
-    ]);*/
     const texture = new THREE.TextureLoader().load( "./resources/disco.jpeg" );
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.RepeatWrapping;
@@ -963,7 +921,6 @@ class ParticleSystemDemo {
     }
 
     this._previousRAF = null;
-    //this._RAF();
     this._simulate();
   }
 
@@ -971,9 +928,6 @@ class ParticleSystemDemo {
     // get audio analysis
     analyser.getByteFrequencyData(dataArray);
 
-    // dataArray.length = 128
-    // dataArray[i] = i * sample_rate / fftsize
-    // fft size = 128*2
     this.num_fires = 22;
     this._fire_list = new Array(this.num_fires);
     var max_width = (this.num_fires-1) * 10;
@@ -984,8 +938,8 @@ class ParticleSystemDemo {
         this._camera.position.set(25, 0, 0);
     }
 
-    while(this._scene.children.length > 0){ 
-        this._scene.remove(this._scene.children[0]); 
+    while(this._scene.children.length > 0){
+        this._scene.remove(this._scene.children[0]);
     }
 
     for (var i = 0; i < this.num_fires; i++) {
@@ -1028,7 +982,6 @@ class ParticleSystemDemo {
   }
 
   _simulate() {
-
     if (this.params.particleFire) {
         if (!audio.paused && !this.params.immersive) {
             this._camera.position.set(25+22*5, 0, 0);
@@ -1036,8 +989,8 @@ class ParticleSystemDemo {
             this._camera.position.set(25, 0, 0);
         }
         if (this._realistic_fire_list.length > 0) {
-            while(this._scene.children.length > 0){ 
-                this._scene.remove(this._scene.children[0]); 
+            while(this._scene.children.length > 0){
+                this._scene.remove(this._scene.children[0]);
             }
             this._realistic_fire_list = [];
 
@@ -1055,7 +1008,7 @@ class ParticleSystemDemo {
                     _z_spawn: i * 10 - max_width/2,
                 });
               }
-          
+
               //add embers
               this._ember_list = new Array(this.num_fires);
               for (var i = 0; i < this.num_fires; i++) {
@@ -1075,8 +1028,8 @@ class ParticleSystemDemo {
             this._camera.position.set(25, 0, 0);
         }
         if (this._ember_list.length > 0 || this._fire_list > 0) {
-            while(this._scene.children.length > 0){ 
-                this._scene.remove(this._scene.children[0]); 
+            while(this._scene.children.length > 0){
+                this._scene.remove(this._scene.children[0]);
             }
             this._ember_list = [];
             this._fire_list = [];
@@ -1144,7 +1097,7 @@ class ParticleSystemDemo {
         }
         for (var i = 0; i < this._ember_list.length; i++) {
           this._ember_list[i].immersive = this.params.immersive;
-          this._ember_list[i].Step(timeElapsedS, t, i); 
+          this._ember_list[i].Step(timeElapsedS, t, i);
         }
     }
     else {
@@ -1156,12 +1109,11 @@ class ParticleSystemDemo {
         }
         for (var i = 0; i < this._ember_list.length; i++) {
           this._ember_list[i].immersive = this.params.immersive;
-          this._ember_list[i].Step(timeElapsedS, t); 
+          this._ember_list[i].Step(timeElapsedS, t);
         }
     }
   }
 }
-
 
 let _APP = null;
 
