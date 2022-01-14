@@ -4,55 +4,11 @@ import {OrbitControls} from 'https://cdn.jsdelivr.net/npm/three@0.127/examples/j
 import {GUI} from 'https://cdn.jsdelivr.net/npm/three@0.127/examples/jsm/libs/dat.gui.module.js';
 import FluidFireSystem from './FluidFireSystem.js';
 
-
-const _VS = `
-uniform float pointMultiplier;
-
-attribute float size;
-attribute float angle;
-attribute float blend;
-attribute vec4 colour;
-
-varying vec4 vColour;
-varying vec2 vAngle;
-varying float vBlend;
-
-void main() {
-  vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-
-  gl_Position = projectionMatrix * mvPosition;
-  gl_PointSize = size * pointMultiplier / gl_Position.w;
-
-  vAngle = vec2(cos(angle), sin(angle));
-  vColour = colour;
-  vBlend = blend;
-}`;
-
-const _FS = [
-	"uniform sampler2D diffuseTexture;",
-	"varying vec4 vColour;",
-	"varying vec2 vAngle;",
-	"varying float vBlend;",
-
-	"void main() {",
-		"vec2 coords = (gl_PointCoord - 0.5) * mat2(vAngle.x, vAngle.y, -vAngle.y, vAngle.x) + 0.5;",
-		"gl_FragColor = texture2D(diffuseTexture, coords) * vColour;",
-		"gl_FragColor *= gl_FragColor.w;",
-		"gl_FragColor.w *= vBlend;",
-	"}",
-].join("\n");
-
-const _FS_2 = [
-	"uniform sampler2D diffuseTexture;",
-	"varying vec4 vColour;",
-	"varying vec2 vAngle;",
-	"varying float vBlend;",
-
-	"void main() {",
-		"vec2 coords = (gl_PointCoord - 0.5) * mat2(vAngle.x, vAngle.y, -vAngle.y, vAngle.x) + 0.5;",
-		"gl_FragColor = texture2D(diffuseTexture, coords) * vColour;",
-	"}",
-].join("\n");
+import {
+	particleVertexShader,
+	particleFragmentShader,
+	emberFragmentShader
+} from './particleShaders.js';
 
 // Spotify API Integration:
 async function authorize(){
@@ -210,8 +166,8 @@ class ParticleSystem {
 
     this._material = new THREE.ShaderMaterial({
         uniforms: uniforms,
-        vertexShader: _VS,
-        fragmentShader: _FS,
+        vertexShader: particleVertexShader,
+        fragmentShader: particleFragmentShader,
         blending: THREE.CustomBlending,
         blendEquation: THREE.AddEquation,
         blendSrc: THREE.OneFactor,
@@ -573,8 +529,8 @@ class EmberSystem {
 
     this._material = new THREE.ShaderMaterial({
         uniforms: uniforms,
-        vertexShader: _VS,
-        fragmentShader: _FS_2,
+        vertexShader: particleVertexShader,
+        fragmentShader: emberFragmentShader,
         blending: THREE.AdditiveBlending,
         depthTest: true,
         depthWrite: false,
