@@ -1,10 +1,7 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.127/build/three.module.js';
 
 import {OrbitControls} from 'https://cdn.jsdelivr.net/npm/three@0.127/examples/jsm/controls/OrbitControls.js';
-import {GUI} from 'https://cdn.jsdelivr.net/npm/three@0.127/examples/jsm/libs/dat.gui.module.js';
 import FluidFireSystem from './FluidFireSystem.js';
-
-import { search } from './spotifyAPI.js';
 
 var dataArray;
 var analyser;
@@ -51,12 +48,6 @@ window.onload = vizInit();
 
 class ParticleSystemDemo {
   constructor() {
-    this.params= {
-        particleFire: true,
-        immersive: false,
-        danceability: 1,
-        energy: 1,
-    }
     this._Initialize();
   }
 
@@ -74,53 +65,6 @@ class ParticleSystemDemo {
     window.addEventListener('resize', () => {
       this._OnWindowResize();
     }, false);
-
-    const gui = new GUI();
-    gui.add(this.params, "particleFire").name("Use Particle Fire");
-    gui.add(this.params, "immersive").name("Dance Mode");
-
-    //default song
-    var title = {title: 'funky galileo'};
-    var t_control = gui.add(title, 'title');
-
-    var artist = {artist: 'sure sure'};
-    var a_control = gui.add(artist, 'artist');
-    var d_control;
-    var e_control;
-
-    // Initial Search
-    search(encodeURIComponent(t_control.object.title.trim()), encodeURIComponent(a_control.object.artist.trim())).then(feats => {
-        // got value here
-        this.params.danceability = feats.danceability;
-        this.params.energy = feats.energy;
-        d_control = gui.add(this.params, "danceability", 0, 1).name("Danceability");
-        e_control = gui.add(this.params, "energy", 0, 1).name("Energy");
-
-    }).catch(e => {
-        // error
-        console.log(e);
-    });
-
-    function updatefeats(demo) {
-        search(encodeURIComponent(t_control.object.title.trim()), encodeURIComponent(a_control.object.artist.trim())).then(feats => {
-            // got value here
-            demo.params.danceability = feats.danceability;
-            d_control.setValue(demo.params.danceability);
-            demo.params.energy = feats.energy;
-            e_control.setValue(demo.params.energy);
-
-        }).catch(e => {
-            // error
-            console.log(e);
-        });
-    }
-
-    var demo = this;
-    var submit = { submit:function(){
-        updatefeats(demo);
-    }};
-    gui.add(submit,'submit').name("Search Spotify");
-
 
     const fov = 60;
     const aspect = 1920 / 1080;
@@ -187,12 +131,7 @@ class ParticleSystemDemo {
 
     this.num_fires = 8;
     var max_width = (this.num_fires-1) * 10;
-    if (!this.params.immersive) {
-        this._camera.position.set(25+this.num_fires*5, 0, 0);
-    }
-    else {
-        this._camera.position.set(25, 0, 0);
-    }
+    this._camera.position.set(25, 0, 0);
 
     while(this._scene.children.length > 0){
         this._scene.remove(this._scene.children[0]);
@@ -216,7 +155,7 @@ class ParticleSystemDemo {
   }
 
   _simulate() {
-    if (!audio.paused && !this.params.immersive) {
+    if (!audio.paused) {
         this._camera.position.set(5+22*2.5, 0, 0);
     } else if (!audio.paused) {
         this._camera.position.set(25, 0, 0);
@@ -260,7 +199,7 @@ class ParticleSystemDemo {
         if (!audio.paused) {
             analyser.getByteFrequencyData(dataArray);
         }
-        this._realistic_fire_list[i].update(this._realistic_fire_list.length - i - 1, audio.paused, dataArray, this.params.danceability, this.params.energy);
+        this._realistic_fire_list[i].update(this._realistic_fire_list.length - i - 1, audio.paused, dataArray, 1, 1);
     }
   }
 }
