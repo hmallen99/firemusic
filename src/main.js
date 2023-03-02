@@ -100,14 +100,7 @@ class ParticleSystemDemo {
     controls.target.set(0, 0, 0);
     controls.update();
 
-    const texture = new THREE.TextureLoader().load( "./resources/disco.jpeg" );
-    texture.wrapS = THREE.RepeatWrapping;
-    texture.wrapT = THREE.RepeatWrapping;
-    texture.repeat.set(1,1);
-
-    this._scene.background = texture;
-
-    this.num_fires = 5;
+    this.num_fires = 1;
     this._fire_list = new Array(this.num_fires);
     var max_width = (this.num_fires-1) * 10;
 
