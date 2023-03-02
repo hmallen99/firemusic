@@ -6,8 +6,7 @@ import FluidFireSystem from './FluidFireSystem.js';
 
 import {
 	particleVertexShader,
-	particleFragmentShader,
-	emberFragmentShader
+	particleFragmentShader
 } from './shaders/particleShaders.js';
 
 import { search } from './spotifyAPI.js';
@@ -421,218 +420,6 @@ class ParticleSystem {
   }
 }
 
-class EmberSystem {
-  constructor(params) {
-    const uniforms = {
-        diffuseTexture: {
-            value: new THREE.TextureLoader().load('./resources/spark.png')
-        },
-        pointMultiplier: {
-            value: window.innerHeight / (2.0 * Math.tan(0.5 * 60.0 * Math.PI / 180.0))
-        }
-    };
-
-    this._material = new THREE.ShaderMaterial({
-        uniforms: uniforms,
-        vertexShader: particleVertexShader,
-        fragmentShader: emberFragmentShader,
-        blending: THREE.AdditiveBlending,
-        depthTest: true,
-        depthWrite: false,
-        transparent: true,
-        vertexColors: true
-    });
-
-    this.immersive = params.immersive;
-
-    this._camera = params.camera;
-    this._particles = [];
-
-    this._geometry = new THREE.BufferGeometry();
-    this._geometry.setAttribute('position', new THREE.Float32BufferAttribute([], 3));
-    this._geometry.setAttribute('size', new THREE.Float32BufferAttribute([], 1));
-    this._geometry.setAttribute('colour', new THREE.Float32BufferAttribute([], 4));
-    this._geometry.setAttribute('angle', new THREE.Float32BufferAttribute([], 1));
-
-    this._points = new THREE.Points(this._geometry, this._material);
-
-    params.parent.add(this._points);
-
-    this._z_spawn = params._z_spawn;
-
-    this._alphaSpline = new LinearSpline((t, a, b) => {
-      return a + t * (b - a);
-    });
-
-    this._alphaSpline.AddPoint(0.1, 1.0);
-
-    this._colourSpline = new LinearSpline((t, a, b) => {
-      const c = a.clone();
-      return c.lerp(b, t);
-    });
-
-    // 0.0->0xFFFF80
-    // 1.0 -> 0xFF8080
-    if (this._x_spawn == -1) {
-      this._colourSpline.AddPoint(0.0, new THREE.Color(0x80FF80));
-    } else {
-      this._colourSpline.AddPoint(0.0, new THREE.Color(0xFFFF80));
-    }
-
-    this._colourSpline.AddPoint(1.0, new THREE.Color(0xFF8080));
-
-    document.addEventListener('keyup', (e) => this._onKeyUp(e), false);
-
-    this._UpdateGeometry();
-
-    this._stop = false;
-  }
-
-  _onKeyUp(event) {
-    // TODO: switch this to the Demo class
-    switch(event.keyCode) {
-    /*
-      case 32: // SPACE
-      this._particles = [];
-      this._stop = !this._stop;
-        //this._AddParticles();
-        break;
-    */
-    }
-  }
-
-  _AddParticles(timeElapsed, rgbcolor, fire_height = 10) {
-    if (this._stop) {
-      return;
-    }
-    if (!this.gdfsghk) {
-      this.gdfsghk = 0.0;
-    }
-    this.gdfsghk += timeElapsed;
-    const n = Math.floor(this.gdfsghk * 75.0);
-    //const n = 1;
-    this.gdfsghk -= n / 75.0;
-    if (!audio.paused) {
-      this._colourSpline._points.splice(0, 1, [0.0, rgbcolor]);
-    }
-    //embers
-    for (let i = 0; i < n; i++) {
-      //const life = (Math.random() + 0.5);
-      const life = fire_height / 30 ;
-      //const life = 1.5;
-      this._particles.push({
-          position: new THREE.Vector3(
-              (Math.random() * 2 * Math.max(1, this.immersive*15) - 1) * 1.0,
-              (Math.random() * 9 - 6) * 1.0,
-              (Math.random() * 2 - 1 - this._z_spawn) * 1.0),
-          size: (Math.random() * 0.5 + 0.5) * 2.0,
-          colour: new THREE.Color(),
-          alpha: 1.0,
-          life: life,
-          maxLife: life,
-          rotation: Math.random() * 2.0 * Math.PI,
-          velocity: new THREE.Vector3(0, fire_height, 0),
-      });
-    }
-  }
-
-  _UpdateGeometry() {
-    const positions = [];
-    const sizes = [];
-    const colours = [];
-    const angles = [];
-
-    for (let p of this._particles) {
-      positions.push(p.position.x, p.position.y, p.position.z);
-      colours.push(p.colour.r, p.colour.g, p.colour.b, p.alpha);
-      sizes.push(p.currentSize);
-      angles.push(p.rotation);
-    }
-
-    this._geometry.setAttribute(
-        'position', new THREE.Float32BufferAttribute(positions, 3));
-    this._geometry.setAttribute(
-        'size', new THREE.Float32BufferAttribute(sizes, 1));
-    this._geometry.setAttribute(
-        'colour', new THREE.Float32BufferAttribute(colours, 4));
-    this._geometry.setAttribute(
-        'angle', new THREE.Float32BufferAttribute(angles, 1));
-
-    this._geometry.attributes.position.needsUpdate = true;
-    this._geometry.attributes.size.needsUpdate = true;
-    this._geometry.attributes.colour.needsUpdate = true;
-    this._geometry.attributes.angle.needsUpdate = true;
-  }
-
-  _UpdateParticles(timeElapsed) {
-    for (let p of this._particles) {
-      p.life -= timeElapsed;
-    }
-
-    this._particles = this._particles.filter(p => {
-      return p.life > 0.0;
-    });
-
-    for (let p of this._particles) {
-      const t = 1.0 - p.life / p.maxLife;
-
-      p.rotation += timeElapsed * 0.5;
-      p.alpha = this._alphaSpline.Get(t);
-      //p.currentSize = p.size * this._sizeSpline.Get(t);
-      p.currentSize = p.size;
-      p.colour.copy(this._colourSpline.Get(t));
-
-      p.position.add(p.velocity.clone().multiplyScalar(timeElapsed));
-
-      const drag = p.velocity.clone();
-      drag.multiplyScalar(timeElapsed * 0.1);
-      drag.x = Math.sign(p.velocity.x) * Math.min(Math.abs(drag.x), Math.abs(p.velocity.x));
-      drag.y = Math.sign(p.velocity.y) * Math.min(Math.abs(drag.y), Math.abs(p.velocity.y));
-      drag.z = Math.sign(p.velocity.z) * Math.min(Math.abs(drag.z), Math.abs(p.velocity.z));
-      //drag.z += Math.random() * (.3 + .3) - .3;
-      p.velocity.sub(drag);
-    }
-  }
-  //0.01666599999999994
-
-  Step(timeElapsed, t, fire_i = -1) {
-    if (audio.paused || fire_i == -1) {
-      this._AddParticles(timeElapsed, new THREE.Color(0x00FF00), 10);
-    } else {
-        // Currently, there are 30 fires and len dataArray = 128
-        // Used an exponential equation so we reach all frequencies
-        // while concentrating on lower ones (higher ones aren't all that exciting)
-        var buffer_index = Math.round(Math.exp(2.8*fire_i/22));
-        var freq_value = dataArray[buffer_index];
-
-        //var fireheight = Math.max(dataArray[buffer_index]/2, + Math.random()*5, 0);
-        // Range of fireheight is from 0 to 255
-        var fireheight = Math.max(Math.exp(0.0162 * dataArray[buffer_index])*4 + Math.random() * 5, 15);
-
-        // Baseline RGB values range from 60 to 160
-        var r = Math.random() * 100 + 60;
-        var g = Math.random() * 100 + 60;
-        var b = Math.random() * 100 + 60;
-        if (freq_value < 70) {
-          // Low frequency -> blue
-          b += Math.random() * 20 + 70;
-        } else if (freq_value > 150) {
-          // High frequency -> red
-          r += Math.random() * 20 + 70;
-        } else {
-          // Medium frequency -> green
-          g += Math.random() * 20 + 70;
-        }
-
-        var str_color = "rgb(" + Math.round(r) + ", " + Math.round(g) + ", " + Math.round(b) + ")";
-        var convcolor = new THREE.Color(str_color);
-        this._AddParticles(timeElapsed, convcolor, fireheight/8);
-    }
-    this._UpdateParticles(timeElapsed);
-    this._UpdateGeometry();
-  }
-}
-
 class ParticleSystemDemo {
   constructor() {
     this.params= {
@@ -761,16 +548,6 @@ class ParticleSystemDemo {
       });
     }
 
-    this._ember_list = new Array(this.num_fires);
-    for (var i = 0; i < this.num_fires; i++) {
-      this._ember_list[i] = new EmberSystem({
-          parent: this._scene,
-          camera: this._camera,
-          immersive: this.params.immersive,
-          _z_spawn: i * 10 - max_width/2,
-      });
-    }
-
     this._realistic_fire_list = new Array(this.num_fires);
     for (var i = 0; i < this.num_fires; i++) {
         this._realistic_fire_list[i] = new FluidFireSystem({
@@ -814,17 +591,6 @@ class ParticleSystemDemo {
       });
     }
 
-    //add embers
-    this._ember_list = new Array(this.num_fires);
-    for (var i = 0; i < this.num_fires; i++) {
-      this._ember_list[i] = new EmberSystem({
-          parent: this._scene,
-          camera: this._camera,
-          immersive: this.params.immersive,
-          _z_spawn: i * 10 - max_width/2,
-      });
-    }
-
     this._realistic_fire_list = new Array(this.num_fires);
     for (var i = 0; i < this.num_fires; i++) {
         this._realistic_fire_list[i] = new FluidFireSystem({
@@ -848,11 +614,10 @@ class ParticleSystemDemo {
     } else if (!audio.paused) {
         this._camera.position.set(25, 0, 0);
     }
-    if (this._ember_list.length > 0 || this._fire_list > 0) {
+    if (this._fire_list > 0) {
         while(this._scene.children.length > 0){
             this._scene.remove(this._scene.children[0]);
         }
-        this._ember_list = [];
         this._fire_list = [];
 
         this.num_fires = 22;
@@ -868,19 +633,6 @@ class ParticleSystemDemo {
         }
     }
     this._RAF_realistic();
-  }
-
-  _RAF_particle() {
-    requestAnimationFrame((t) => {
-      if (this._previousRAF === null) {
-        this._previousRAF = t;
-      }
-
-      this._simulate();
-      this._threejs.render(this._scene, this._camera);
-      this._Step(t - this._previousRAF, t);
-      this._previousRAF = t;
-    });
   }
 
   _RAF_realistic() {
@@ -915,10 +667,6 @@ class ParticleSystemDemo {
             this._fire_list[i].energy = this.params.energy;
             this._fire_list[i].Step(timeElapsedS, i);
         }
-        for (var i = 0; i < this._ember_list.length; i++) {
-          this._ember_list[i].immersive = this.params.immersive;
-          this._ember_list[i].Step(timeElapsedS, t, i);
-        }
     }
     else {
         for (var i = 0; i < this._fire_list.length; i++) {
@@ -926,10 +674,6 @@ class ParticleSystemDemo {
           this._fire_list[i].danceability = this.params.danceability;
           this._fire_list[i].energy = this.params.energy;
           this._fire_list[i].Step(timeElapsedS);
-        }
-        for (var i = 0; i < this._ember_list.length; i++) {
-          this._ember_list[i].immersive = this.params.immersive;
-          this._ember_list[i].Step(timeElapsedS, t);
         }
     }
   }
