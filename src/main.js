@@ -566,8 +566,7 @@ class ParticleSystemDemo {
     // get audio analysis
     analyser.getByteFrequencyData(dataArray);
 
-    this.num_fires = 22;
-    this._fire_list = new Array(this.num_fires);
+    this.num_fires = 8;
     var max_width = (this.num_fires-1) * 10;
     if (!this.params.immersive) {
         this._camera.position.set(25+this.num_fires*5, 0, 0);
@@ -578,17 +577,6 @@ class ParticleSystemDemo {
 
     while(this._scene.children.length > 0){
         this._scene.remove(this._scene.children[0]);
-    }
-
-    for (var i = 0; i < this.num_fires; i++) {
-      this._fire_list[i] = new ParticleSystem({
-          parent: this._scene,
-          camera: this._camera,
-          immersive: this.params.immersive,
-          danceability: this.params.danceability,
-          energy: this.params.energy,
-          _z_spawn: i * 10 - max_width/2,
-      });
     }
 
     this._realistic_fire_list = new Array(this.num_fires);
@@ -654,27 +642,6 @@ class ParticleSystemDemo {
             analyser.getByteFrequencyData(dataArray);
         }
         this._realistic_fire_list[i].update(this._realistic_fire_list.length - i - 1, audio.paused, dataArray, this.params.danceability, this.params.energy);
-    }
-  }
-
-  _Step(timeElapsed, t) {
-    const timeElapsedS = timeElapsed * 0.001;
-    if (!audio.paused) {
-        analyser.getByteFrequencyData(dataArray);
-        for (var i = 0; i < this._fire_list.length; i++) {
-            this._fire_list[i].immersive = this.params.immersive;
-            this._fire_list[i].danceability = this.params.danceability;
-            this._fire_list[i].energy = this.params.energy;
-            this._fire_list[i].Step(timeElapsedS, i);
-        }
-    }
-    else {
-        for (var i = 0; i < this._fire_list.length; i++) {
-          this._fire_list[i].immersive = this.params.immersive;
-          this._fire_list[i].danceability = this.params.danceability;
-          this._fire_list[i].energy = this.params.energy;
-          this._fire_list[i].Step(timeElapsedS);
-        }
     }
   }
 }
