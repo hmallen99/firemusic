@@ -843,72 +843,31 @@ class ParticleSystemDemo {
   }
 
   _simulate() {
-    if (this.params.particleFire) {
-        if (!audio.paused && !this.params.immersive) {
-            this._camera.position.set(25+22*5, 0, 0);
-        } else if (!audio.paused) {
-            this._camera.position.set(25, 0, 0);
-        }
-        if (this._realistic_fire_list.length > 0) {
-            while(this._scene.children.length > 0){
-                this._scene.remove(this._scene.children[0]);
-            }
-            this._realistic_fire_list = [];
-
-            //var num_fires = 22;
-            var num_fires = this.num_fires;
-            var max_width = (this.num_fires-1) * 10;
-            this._fire_list = new Array(this.num_fires);
-            for (var i = 0; i < this.num_fires; i++) {
-                this._fire_list[i] = new ParticleSystem({
-                    parent: this._scene,
-                    camera: this._camera,
-                    immersive: this.params.immersive,
-                    danceability: this.params.danceability,
-                    energy: this.params.energy,
-                    _z_spawn: i * 10 - max_width/2,
-                });
-              }
-
-              //add embers
-              this._ember_list = new Array(this.num_fires);
-              for (var i = 0; i < this.num_fires; i++) {
-                this._ember_list[i] = new EmberSystem({
-                    parent: this._scene,
-                    camera: this._camera,
-                    immersive: this.params.immersive,
-                    _z_spawn: i * 10 - max_width/2,
-                });
-              }
-        }
-        this._RAF_particle();
-    } else {
-        if (!audio.paused && !this.params.immersive) {
-            this._camera.position.set(5+22*2.5, 0, 0);
-        } else if (!audio.paused) {
-            this._camera.position.set(25, 0, 0);
-        }
-        if (this._ember_list.length > 0 || this._fire_list > 0) {
-            while(this._scene.children.length > 0){
-                this._scene.remove(this._scene.children[0]);
-            }
-            this._ember_list = [];
-            this._fire_list = [];
-
-            this.num_fires = 22;
-            var max_width = (this.num_fires-1) * 10;
-            this._realistic_fire_list = new Array(this.num_fires);
-            for (var i = 0; i < this.num_fires; i++) {
-                this._realistic_fire_list[i] = new FluidFireSystem({
-                    scene: this._scene,
-                    camera: this._camera,
-                    renderer: this._threejs,
-                    _z_spawn: i * 10 - max_width/2,
-                });
-            }
-        }
-        this._RAF_realistic();
+    if (!audio.paused && !this.params.immersive) {
+        this._camera.position.set(5+22*2.5, 0, 0);
+    } else if (!audio.paused) {
+        this._camera.position.set(25, 0, 0);
     }
+    if (this._ember_list.length > 0 || this._fire_list > 0) {
+        while(this._scene.children.length > 0){
+            this._scene.remove(this._scene.children[0]);
+        }
+        this._ember_list = [];
+        this._fire_list = [];
+
+        this.num_fires = 22;
+        var max_width = (this.num_fires-1) * 10;
+        this._realistic_fire_list = new Array(this.num_fires);
+        for (var i = 0; i < this.num_fires; i++) {
+            this._realistic_fire_list[i] = new FluidFireSystem({
+                scene: this._scene,
+                camera: this._camera,
+                renderer: this._threejs,
+                _z_spawn: i * 10 - max_width/2,
+            });
+        }
+    }
+    this._RAF_realistic();
   }
 
   _RAF_particle() {
