@@ -195,7 +195,7 @@ class FluidFireSystem {
 
 	update() {
 		// Updates the shaders
-		// Call this in _RAF
+		// Call this in _simulate
 		// Set render targets to outputs of dependencies
 		this.advectUniforms["temperatureSampler"].value = this.gpuCompute.getAlternateRenderTarget(this.temperatureVariable).texture;
 

@@ -28,7 +28,7 @@ class ParticleSystemDemo {
     const near = 1.0;
     const far = 1000.0;
     this._camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-    this._camera.position.set(25, 0, 0);
+    this._camera.position.set(15, 0, 0);
 
     this._scene = new THREE.Scene();
 
@@ -57,21 +57,13 @@ class ParticleSystemDemo {
     controls.target.set(0, 0, 0);
     controls.update();
 
-    this.num_fires = 1;
-    this._fire_list = new Array(this.num_fires);
-    var max_width = (this.num_fires-1) * 10;
+    this._realistic_fire = new FluidFireSystem({
+      scene: this._scene,
+      camera: this._camera,
+      renderer: this._threejs,
+      _z_spawn: 0,
+    });
 
-    this._realistic_fire_list = new Array(this.num_fires);
-    for (var i = 0; i < this.num_fires; i++) {
-        this._realistic_fire_list[i] = new FluidFireSystem({
-            scene: this._scene,
-            camera: this._camera,
-            renderer: this._threejs,
-            _z_spawn: i * 10 - max_width/2,
-        });
-    }
-
-    this._previousRAF = null;
     this._simulate();
   }
 
@@ -82,44 +74,11 @@ class ParticleSystemDemo {
   }
 
   _simulate() {
-    if (this._fire_list > 0) {
-        while(this._scene.children.length > 0){
-            this._scene.remove(this._scene.children[0]);
-        }
-        this._fire_list = [];
-
-        this.num_fires = 22;
-        var max_width = (this.num_fires-1) * 10;
-        this._realistic_fire_list = new Array(this.num_fires);
-        for (var i = 0; i < this.num_fires; i++) {
-            this._realistic_fire_list[i] = new FluidFireSystem({
-                scene: this._scene,
-                camera: this._camera,
-                renderer: this._threejs,
-                _z_spawn: i * 10 - max_width/2,
-            });
-        }
-    }
-    this._RAF_realistic();
-  }
-
-  _RAF_realistic() {
     requestAnimationFrame((t) => {
-      if (this._previousRAF === null) {
-        this._previousRAF = t;
-      }
-
       this._simulate();
-      this._UpdateRealisticFires();
+      this._realistic_fire.update()
       this._threejs.render(this._scene, this._camera);
-      this._previousRAF = t;
     });
-  }
-
-  _UpdateRealisticFires(){
-    for (var i = 0; i < this._realistic_fire_list.length; i++) {
-        this._realistic_fire_list[i].update();
-    }
   }
 }
 
