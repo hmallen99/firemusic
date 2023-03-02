@@ -1,335 +1,145 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
 <head>
-<style>
-  body {
-    background: url('./images/bg.jpg')
-    repeat fixed;
-    background-size:cover;
-    overflow:scroll;
-    padding: 100px;
-    width: 1400px;
-    margin: auto;
-    text-align: left;
-    font-weight: 300;
-    font-family: 'Raleway', sans-serif;
-    color: #121212;
-  }
-  h1, h2, h3, h4 {
-    font-family: 'Raleway', sans-serif;
-  }
-  .results {
-  border: 1px solid black;
-  border-collapse: collapse;
-}
-table, tr, td {
-  padding: 12px;
-}
-</style>
-<title>CS 184 Final Report</title>
-<meta http-equiv="content-type" content="text/html; charset=utf-8" />
-<link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
-<link rel="preconnect" href="https://fonts.gstatic.com">
-<link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+
+    table,
+    tr,
+    td {
+      padding: 12px;
+    }
+  </style>
+  <title>CS 184 Final Report</title>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+  <link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 
 
 <body>
-
-<h1 align="middle" style="color:white;">CS 184: Computer Graphics and Imaging, Spring 2021</h1>
-<h1 align="middle" style="color:white;">Final Report: Music-reactive Real-time Fire Simulation</h1>
-<h2 align="middle" style="color:white;">Henry Allen, Priyanka Kargupta, Hannah Ku, Amber Xie</h2>
-
-<br><br>
-
-<div style="background-color: #ffffffeb; padding:40px; border-radius: 25px;">
-
-<h2 align="middle">Summary</h2>
-<p>
-  In this project, we created an audio visualizer using fire simulations that react to change in features in music like frequency, danceability, and tempo. We created a set of realistic fires that change in color, amplitude, and velocity due to the aforementioned music feature changes. We are able to connect locally uploaded music files and results from the Spotify API to make the simulation interactive.
-</p>
-<h3 align="middle">Try out our <a href="https://pkargupta.github.io/firemusic">demo</a>.</h3>
-
-<h2 align="middle">Technical Approach:</h2>
-<h3 align="middle">Fire Particle System</h3>
-
-<center><img src="./images/particle_system.png" align="middle" height="300px"style="float:right;" /></center>
-<p>
-  For our basic fire system, we worked off an <a href="https://github.com/simondevyoutube/ThreeJS_Tutorial_ParticleSystems">existing particle system demo</a>. This simulation simulated flames shooting out of a rocket, so we had to make some fundamental changes to what the particle system looked like. We used this diagram to the right to determine the different steps in rendering a particle system.
-</p>
-<p>First, to represent the particles, we decreased the average size of the particles and increased the number of particles added at every timestep in order to make the particles less noticeable and the entire system more dynamic and realistic. We set an initial opacity and color that mimicks the color of the fire, and we randomly generate lifespans. We also set an initial velocity so that the fire does not shoot up unrealistically, nor does it stay so low as to be completely uninteresting.
-</p>
-<p>
-  Second, to update the particle, we update both its attributes and position. For its appearance attributes, we slowly decrease the alpha value the particle fades as it reaches the top of the fire. Then, we update its next location. This involves many forces: rotation, so that particles spin around to create more stoachasticity; gravity; drag; and pressure points. 
-</p>
-<ul>
-  <li>
-    <b>Drag and Gravity </b>
-    <p>
-      We apply drag in the xz axes and gravity in the y axis.
-      We use the drag formula:
-    </p>
-      <br>
-      <center><img src="https://www.thermal-engineering.org/wp-content/uploads/2019/05/drag-force-formula.png" height="150px"></img></center>
-      <br>
-    <p>
-      However, there are a few optimizations we make for our specific particle system. First, the densities are the same. Second, while the sizes of the particle may vary, the variation is incredibly small, so we consider the masses and reference area of our particles to be a constant contributing to the drag coefficient. In that case, instead of calculating the force, we can directly calculate the acceleration, since the mass is constant across all particles. 
-    </p>
-    <p>
-      We implement gravity similarly. Since we assume the particles have near identical mass and shape, we directly subtract off a vector pointing down in the y direction.
-    </p>
-  </li>
-  <li>
-    <b>Pressure Points</b>
-    <center><img src="images/pressure_points.png" height="250px" style="float:right; margin-left: 30px; margin-top:20px"></img></center>
-    <p>
-    While gravity and drag improve the rendering of the particle system, we found that the fire was not as realistic as we desired, since there was no flickering of flames like in real fires. According to a <a href="https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.87.2093&rep=rep1&type=pdf">2005 paper by Sanandanan Somasekaran</a>, "as gases in a fire get hotter, they become less dense than its surrounding air. Thus, the gases move upwards towards a region where the pressure is lower." In order to follow this approach, we decided to generate pressure points to better mimick the tongues of flame.
+  <h1>Fluid Fire Simulation</h1>
+  <h2>Henry Allen</h2>
+  <h3>CS 184: Computer Graphics and Imaging, Spring 2021</h3>
+  <h4>Implementation</h4>
+  <p>
+    Our fire fluid system was based off of the Navier Stokes fluid simulation. We based our implementation off of the
+    <a
+      href=https://developer.nvidia.com/gpugems/gpugems3/part-v-physics-simulation/chapter-30-real-time-simulation-and-rendering-3d-fluids>Nvidia
+      GPU Gems fluid simulation overview</a>,
+    as well as a <a href=https://www.shadertoy.com/view/ldd3WS>simple 2D Navier Stokes</a> implementation we found on
+    shadertoy. The simple Navier Stokes variant that we used implemented
+    velocity advection, divergence, and pressure shaders in 2D. We extended this implementation to work in THREE.js in
+    3D with additional shaders for temperature and reactivity advection.
   </p>
   <p>
-    To implement this, we spawned randomly generated pressure points that attract particles nearby. These pressure points are also particles, but they have a different lifespan and do not change positions until their lifespan is used up and a new point is randomly generated to take its place. This greatly improved the rendering of our fire and made it less symmetric. However, since this was inteded to be a WebGL simulation that is accessible and easy to use, we were constrained by the number of pressure points we could use without making the program unbearably slow. THus, while adding more pressure points would have made the fire even more realistic, we simply use 5 pressure points.
+    The base implementation for Navier Stokes does three shader passes, the output of each pass becoming the input of
+    the next pass, with inputs and outputs being stored as textures. The first pass implements
+    velocity, which steps in the negative direction of the velocity at each (x, y) position to get the new velocity at
+    each (x, y). This procedure is called advection. We then pass these new velocities as a texture
+    to a divergence shader, which estimates the divergence at each (x, y) point by calculating the velocity at the 4
+    points above (v_y1), below (v_y0), left (v_x1), and right (v_x0) of the current (x, y), and
+    computing div_xy = ((v_x1 - v_x0) + (v_y1 - v_y0)) / 2. We then pass this divergence output and the velocity
+    output into a pressure shader, where we compute the Jacobi pressure at each (x, y). This calculation
+    gets the sum of pressures at the surrounding blocks above, below, left, and right of each (x, y), and subtracts
+    out the divergence at (x, y) and divides by 4. We then display the output velocity at each texture.
+    To implement this in THREE.js, we had to use the special GPUComputationRenderer, which allows us to set the render
+    targets and dependencies of each shader pass. We then use a ping-pong buffer to display the
+    output velocity to alternating materials in the same location. This integration was acutally quite tricky, because
+    support for the GPUComputationRenderer is quite poor, and setting the render targets to work with
+    the ping pong buffers for each shader is quite tricky.
   </p>
-  <p>
-    The diagram to the left illustrates what pressure points look like in the fire simulation. We also chose to simulate pressure points only at the top of the fire in order to reduce computational complexity when running the simulation. 
-  </p>
-  <center><img src="./images/tongues.png" align="middle" height="250px"/></center>
-  </li>
-</ul>
-<br>
-
-<h3 align="middle">Fire Fluid System</h3>
-<h4>Implementation</h4>
-<p>
-  Our fire fluid system was based off of the Navier Stokes fluid simulation. We based our implementation off of the 
-  <a href=https://developer.nvidia.com/gpugems/gpugems3/part-v-physics-simulation/chapter-30-real-time-simulation-and-rendering-3d-fluids>Nvidia GPU Gems fluid simulation overview</a>,
-  as well as a <a href=https://www.shadertoy.com/view/ldd3WS>simple 2D Navier Stokes</a> implementation we found on shadertoy. The simple Navier Stokes variant that we used implemented
-  velocity advection, divergence, and pressure shaders in 2D. We extended this implementation to work in THREE.js in 3D with additional shaders for temperature and reactivity advection.
-</p>
-<p>
-  The base implementation for Navier Stokes does three shader passes, the output of each pass becoming the input of the next pass, with inputs and outputs being stored as textures. The first pass implements
-  velocity, which steps in the negative direction of the velocity at each (x, y) position to get the new velocity at each (x, y). This procedure is called advection. We then pass these new velocities as a texture
-  to a divergence shader, which estimates the divergence at each (x, y) point by calculating the velocity at the 4 points above (v_y1), below (v_y0), left (v_x1), and right (v_x0) of the current (x, y), and
-  computing div_xy = ((v_x1 - v_x0) + (v_y1 - v_y0)) / 2. We then pass this divergence output and the velocity output into a pressure shader, where we compute the Jacobi pressure at each (x, y). This calculation 
-  gets the sum of pressures at the surrounding blocks above, below, left, and right of each (x, y), and subtracts out the divergence at (x, y) and divides by 4. We then display the output velocity at each texture.
-  To implement this in THREE.js, we had to use the special GPUComputationRenderer, which allows us to set the render targets and dependencies of each shader pass. We then use a ping-pong buffer to display the 
-  output velocity to alternating materials in the same location. This integration was acutally quite tricky, because support for the GPUComputationRenderer is quite poor, and setting the render targets to work with
-  the ping pong buffers for each shader is quite tricky.
-</p>
-<div align="middle">
-  <table style="width=100%">
-      <tr>
-          <td align="middle">
-            <img src="./images/advection.jpg" width="240px" />
-            <figcaption align="middle">Advection Equation for Velocity <i>u</i>. The &nabla represents a three vector of the partial derivative at x, y, z. p represents pressure, and f is external force.</figcaption>
-          </td>
-          <td align="middle">
-            <img src="./images/temperature.jpg" width="240px" />
-            <figcaption align="middle">Equation that represents buoyant force due to temperature differences. The P, m, g, and R terms are represented as a single constant in our shader. T0 is the ambient temperature, and T is the advection temperature.</figcaption>
-          </td>
-      </tr>
-      <tr>
-          <td align="middle">
-              <img src="./images/reactivity.jpg" width="240px" />
-              <figcaption align="middle">The reactivity <i>Y</i>. k is the constant term that is subtracted from the advected reactivity at each step.</figcaption>
-          </td>
-      </tr>
-  </table>
-</div>
-<p>
-  We next converted this implementation to 3D, where we indexed into a 2D texture as if it were 3D, similar to the way one might index into a 1D framebuffer as if it were 2D. We then used ray marching to accumulate
-  the velocities along a particular ray, and output the resulting accumulated values. It took a bit of fine-tuning to ensure that the fluid simulation displayed with the right amount of color, as it was easy to get
-  a blown-out white blob or just a black square. We added our 3D texture onto a cube that we could place anywhere in the scene.
-</p>
-<p>
-  We then implemented shaders to make the fluid simulation a real fire simulation. This included first changing the colors from gray to orange, and then adding a temperature advection shader and a reactivity advection
-  shader, The temperature advection makes the fluid sink in the colder air at the top of the cell, and rise near the warm source of the fluid. It uses the same advection as the velocity, but accesses into the temperature
-  texture, rather than the velocity texture to update the new temperature values. We repeat this process for reactivity advection, which just makes the fire decrease in energy as a function of time. This just gets the
-  advected reactivity value, and subtracts a uniform constant from it. We also added a slight smoke effect to the fire. When reactivity reaches 0, we briefly turn the colorful fire into a gray smoke. We also scale the
-  alpha value of the smoke with the z height of the smoke.
-</p>
-<p>
-  Finally, we implemented some changes to make the fluid fire interact with the music. We made the colors of the fire change with the frequency amplitude of the song, with red color representing quiet frequencies, green
-  medium, and blue loud. We then used the danceability parameter to add random perturbations to the fire to make it move around a lot more. A higher danceability led to crazier fires. Finally, we used the energy constant
-  to modulate the reactivity constant of the fire. Higher energy meant fires had a smaller decrease in reactivity at each time step, meaning they would get taller and wider.
-</p>
-<div align="middle">
+  <div align="middle">
     <table style="width=100%">
-        <tr>
-            <td align="middle">
-                <img src="./images/fluidreg.png" width="480px" />
-                <figcaption align="middle">No Music</figcaption>
-            </td>
-            <td align="middle">
-                <img src="./images/fluidcolor.png" width="480px" />
-                <figcaption align="middle">With Music</figcaption>
-            </td>
-        </tr>
+      <tr>
+        <td align="middle">
+          <img src="./images/advection.jpg" width="240px" />
+          <figcaption align="middle">Advection Equation for Velocity <i>u</i>. The &nabla represents a three vector of
+            the partial derivative at x, y, z. p represents pressure, and f is external force.</figcaption>
+        </td>
+        <td align="middle">
+          <img src="./images/temperature.jpg" width="240px" />
+          <figcaption align="middle">Equation that represents buoyant force due to temperature differences. The P, m,
+            g, and R terms are represented as a single constant in our shader. T0 is the ambient temperature, and T is
+            the advection temperature.</figcaption>
+        </td>
+      </tr>
+      <tr>
+        <td align="middle">
+          <img src="./images/reactivity.jpg" width="240px" />
+          <figcaption align="middle">The reactivity <i>Y</i>. k is the constant term that is subtracted from the
+            advected reactivity at each step.</figcaption>
+        </td>
+      </tr>
     </table>
-</div>
-<h4>Challenges</h4>
-<p>
-  We faced numerous challenges implementing the fluid simulation.
+  </div>
+  <p>
+    We next converted this implementation to 3D, where we indexed into a 2D texture as if it were 3D, similar to the
+    way one might index into a 1D framebuffer as if it were 2D. We then used ray marching to accumulate
+    the velocities along a particular ray, and output the resulting accumulated values. It took a bit of fine-tuning
+    to ensure that the fluid simulation displayed with the right amount of color, as it was easy to get
+    a blown-out white blob or just a black square. We added our 3D texture onto a cube that we could place anywhere in
+    the scene.
+  </p>
+  <p>
+    We then implemented shaders to make the fluid simulation a real fire simulation. This included first changing the
+    colors from gray to orange, and then adding a temperature advection shader and a reactivity advection
+    shader, The temperature advection makes the fluid sink in the colder air at the top of the cell, and rise near the
+    warm source of the fluid. It uses the same advection as the velocity, but accesses into the temperature
+    texture, rather than the velocity texture to update the new temperature values. We repeat this process for
+    reactivity advection, which just makes the fire decrease in energy as a function of time. This just gets the
+    advected reactivity value, and subtracts a uniform constant from it. We also added a slight smoke effect to the
+    fire. When reactivity reaches 0, we briefly turn the colorful fire into a gray smoke. We also scale the
+    alpha value of the smoke with the z height of the smoke.
+  </p>
+  <h4>Challenges</h4>
+  <p>
+    We faced numerous challenges implementing the fluid simulation.
   <ol>
     <li>
-      The first challenge was integrating the texture buffer method that was used in the GPU gems and shadertoy approach into THREE.js. THREE.js isn't necessarily designed for doing multiple shader passes and
-      is especially not designed for passing the output of one shader into another shader as input. We ended up having to manually link the outputs of each shader to the inputs of the dependent shaders using
-      the alternate render target of the output shader. The normal use case for THREE.js is to just set a dependent shader as a dependency with a handy built-in method, but that just seemed to pass in the texture
+      The first challenge was integrating the texture buffer method that was used in the GPU gems and shadertoy
+      approach into THREE.js. THREE.js isn't necessarily designed for doing multiple shader passes and
+      is especially not designed for passing the output of one shader into another shader as input. We ended up having
+      to manually link the outputs of each shader to the inputs of the dependent shaders using
+      the alternate render target of the output shader. The normal use case for THREE.js is to just set a dependent
+      shader as a dependency with a handy built-in method, but that just seemed to pass in the texture
       before the shader pass, rather than after.
     </li>
     <li>
-      We next had trouble implementing the fluid simulation in 3D. The modification to the fluid simulation shaders is quite simple, as you just have to add some additional variables to support the additional z-axis.
-      The real challenge was working around the poor 3D texture support in THREE.js. There is a 3D texture that you can use, but it wasn't possible to use these 3D textures as output targets for our multiple shader
-      passes. To circumvent this, we created a larger 2D texture and indexed into it as if it were 3D. We designed this 2D texture as if it were a line of 2D textures incrasing along the z-axis.
-      To index into it for a 3D point (x, y, z), the x-coordinate would be x + z * (length(x-axis)). This was further complicated, as we actual had to round the z value down, and then calculate the two nearest z-planes,
-      and interpolate between them. 
+      We next had trouble implementing the fluid simulation in 3D. The modification to the fluid simulation shaders is
+      quite simple, as you just have to add some additional variables to support the additional z-axis.
+      The real challenge was working around the poor 3D texture support in THREE.js. There is a 3D texture that you
+      can use, but it wasn't possible to use these 3D textures as output targets for our multiple shader
+      passes. To circumvent this, we created a larger 2D texture and indexed into it as if it were 3D. We designed
+      this 2D texture as if it were a line of 2D textures incrasing along the z-axis.
+      To index into it for a 3D point (x, y, z), the x-coordinate would be x + z * (length(x-axis)). This was further
+      complicated, as we actual had to round the z value down, and then calculate the two nearest z-planes,
+      and interpolate between them.
     </li>
     <li>
-      Our final major challenge, which we were unable to solve, was integrating our fluid simulation into the particle-based simulation. We originally intended the fluid simulation to be a smoke simulation,
-      rather than a fire simulation, but it turned out we weren't able to integrate the smoke in. This occurred because the smoke was rendered as the texture of a 3D box, and the particle-based fire was rendered
-      inside of this box. Because the texture was displayed on the outside of the box, the particles on the inside would be blocked, even if we changed the opacity or alpha-blending of the smoke box. This produced
-      some highly unattractive results. This would perhaps be feasible in a more modern graphics engine, where we could play around with shaders more, but would have been too challenging in WebGL. A lesson we learned from
-      this is to plan out your implementation ahead of time, as we had just assumed that the integration step would work. The end result was fine, but we could have very easily ended up with nothing to show for our work.
+      Our final major challenge, which we were unable to solve, was integrating our fluid simulation into the
+      particle-based simulation. We originally intended the fluid simulation to be a smoke simulation,
+      rather than a fire simulation, but it turned out we weren't able to integrate the smoke in. This occurred
+      because the smoke was rendered as the texture of a 3D box, and the particle-based fire was rendered
+      inside of this box. Because the texture was displayed on the outside of the box, the particles on the inside
+      would be blocked, even if we changed the opacity or alpha-blending of the smoke box. This produced
+      some highly unattractive results. This would perhaps be feasible in a more modern graphics engine, where we
+      could play around with shaders more, but would have been too challenging in WebGL. A lesson we learned from
+      this is to plan out your implementation ahead of time, as we had just assumed that the integration step would
+      work. The end result was fine, but we could have very easily ended up with nothing to show for our work.
     </li>
   </ol>
-</p>
+  </p>
 
-<h3 align="middle">Smoke</h3>
-<p>
-  Our particle smoke implementation was fairly simple. We built upon our existing particle system, and added a smoke that rose with the same dynamics as the fire particles, but rose higher, and had different color blending.
-  The smoke particles start out white and have an alpha value of 0 when they spawn, and increase in alpha value and darken as they reach the top of the flames. We also modify the alpha value of the fire particles to 
-  decrease towards the top of the fire, such that our additive alpha blending does not result in overwritten smoke particles. The alpha blending implementation was adapted from <a href=https://github.com/simondevyoutube/ThreeJS_Tutorial_BlendModes/blob/master/main.js>here</a>.
-  Our implementation differed by changing the color, amount, and height of the smoke, as well as the inclusion of the same realistic pressure dynamics acting on our particle fire implementation. 
-</p>
-<center><img src="./images/smoke.png" align="middle" height="250px"/></center>
+  <h2>References</h2>
 
-<h3 align="middle">Embers</h3>
-<p>
-  To generate embers, we likewise created a new ember particle system class, similar to the particle system class implemented for our basic fires. We added changes to our program's fragment shader in order to accommodate our new diffuse textures for each ember particle. The ember particles are then generated randomly around the base of our fires, and rise upwards. To ensure that our embers appear realistic, we adjusted the velocity values of the embers to flow upwards at a slower pace compared to the existing fire particles. Furthermore, we integrated randomized drag forces in the z-direction to simulate real embers floating away from the fire, and lowered the density of our fire ember clusters by adjusting the particle generation frequency based on the timestep of our system. Lastly, we made sure to incorporate values obtained from our audio analysis to adjust the lifetime and velocity of our ember particles accordingly.
-</p>
-
-<center><img src="./images/embers.png" align="middle" height="250px"/></center>
-
-<h3 align="middle">Music Analysis</h3>
-<p>
-  Once we connected the fires with the music, we had various stylistic and technical choices. First, we had to decide how to visualize the music. For this, we used the JavaScript Web Audio API, which allowed us to reference the HTML audio player we inserted into the HTML body and create a new AudioContext. With the AudioContext, we connected the audio source, which was the media player, and an AnalyserNode. The AnalyserNode is able to provide us with real-time frequency and time-domain analysis information.
-  <br><center><img src="./images/analyser.png" align="middle" height="250px"/></center><br>
-
-  We decided to use a window size of 256 samples for Fast Fourier Transform to get the audio's frequency domain data.  After using the FFT, we chose a number of frequencies to represent. This is because a low resolution would be able to run smoothly with WebGL and still showcase the different frequencies. We found that higher frequencies are very sensitive and are not very interesting to look at, so to determine which frequency to look at, we used an exponential function that takes in the fire index and returned an index of the FFT array. This ensured that more of the fires reflected lower frequencies, while were still a few that captured the higher frequencies.
-</p>
-<p>
-  Then, we had to make some design choices about the fire. In order to reflect a higher magnitude of a frequency, we chose to increase the velocity and lifespan of particles in that fire. That meant the fire would be much taller than the other fires. We encountered various problems trying to make the fire look realistic at various heights while also not being too computationally expensive. At the end, we settled on a range of parameters that seemed appropriate and balanced our main concerns.
-</p>
-<p>
-  Finally, we had some fun with incorporating parts of the Spotify Web API to make the fires more interactive. In order to integrate the Spotify Web API, we had to make two main asynchronous calls: one for authentication with the Client-Credentials Authentication Flow (the user does not have to authorize their Spotify account, rather we can use our own token as need since we do not require private user data), and another for calling both the Spotify Search and Audio Features API to retrieve the ID of the track title/artist entered by the user and its audio features (danceability and energy).<br>
-   <center><img src="./images/spotifycredentials.png" align="middle" height="480px"/></center><br>
-  Based on the danceability and energy of tracks, we changed the colors of the fire particles and smoke particles. The lower the energy of the track, the lighter the smoke would be. Low danceability also corresponded to cooler-toned (blue) flames; medium danceability to green flames; and high danceability to warmer-toned (red) flames. In order to achieve this effect, we changed the color values, which are interpolated throughout the lifespan of the particle. Thus, a particle can start out as a more saturated blue and slowly fade.
-</p>
-<div align="middle">
-    <table style="width=100%">
-        <tr>
-            <td align="middle">
-                <img src="./images/funkyspotify.gif" width="480px" />
-                <figcaption align="middle">Song: Funky Galileo, Sure Sure (high danceability --> warm tones)</figcaption>
-            </td>
-            <td align="middle">
-                <img src="./images/ghostinspotify.gif" width="480px" />
-                <figcaption align="middle">Song: Ghostin, Ariana Grande (low danceability --> cool tones)</figcaption>
-            </td>
-        </tr>
-    </table>
-</div>
-
-<h3 align="middle">Special Effects: Dance Mode</h3>
-<p>
-  For fun, we added a dance mode to our simulation which, when toggled, brings the camera perspective closer to the fire, randomly varies the z-index of the embers, and increases the lifetime of a particle in order to simulate an immersive environment.
-  <center><img src="./images/dancemode.gif" align="middle" width="480px"/></center><br>
-</p>
-<h4>Challenges & Things We Learned</h4>
-<p>
-  While implementing a music-reactive real-time fire simulation, we definitely realized that fire simulation is difficult, but rewarding.
-  <ol>
-    <li>
-      We built upon our basic understanding of OpenGL from the class projects, especially the Cloth Simulation Project. We specifically had to learn how to use the THREE.js WebGL framework, as well just JavaScript basics to make our simulation interactive. 
-    </li>
-    <li>
-      We learned many technical concepts related to the physical properties of fluid, fire, and their simulation, including particle system pipelines, velocity advection, Navier-Stokes, buoyancy, drag, pressure points, among others. Making the fire realistic was definitely challenging, as we have to balance the tradeoff between realism and browser performance (especially since the animation loop required a lot of computation and not all users have a local GPU). There were other technical methods that we tried to implement to make the particle fire realistic, but aesthetically did not work well, such as Perlin Noise implemented in the fragment shader, which we ended up taking out.
-    </li>
-    <li>
-      We also learned how to compute the FFT of an audio clip with JavaScript through the integration of various APIs, as well as learning how to perform asynchronous API calls through Web Service HTTP calls and fetching their JSON response. This was the first time any of us had used the Spotify Web API, so learning how to authenticate the call through their Client-Credentials Authentication Flow was quite challenging.
-    </li>
-  </ol>
-</p>
-<h2 align="middle">Results:</h2>
-<h3 align="middle">Try out our <a href="https://pkargupta.github.io/firemusic">demo</a>.</h3>
-<p>
-  <div align="middle">
-    <table style="width=100%">
-    	<tr>
-            <td align="middle">
-            	<h3 align="middle">Final Video</h3>
-            	<iframe width="1280" height="720" src="https://www.youtube.com/embed/xUTcMKkWito" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-            </td>
-        </tr>
-    	<tr>
-        	<td align="middle">
-        		<h3 align="middle">Particle Fire Demo</h3>
-                <video width="1280" height="720" poster="images/particlethumbnail.png" controls>
-                    <source src="video/particledemo.mp4" type="video/mp4">
-                    Your browser does not support the video tag.
-                </video>
-            </td>
-        </tr>
-        <tr>
-            <td align="middle">
-            	<h3 align="middle">Fluid Fire Demo</h3>
-                <video width="1280" height="720" controls>
-                    <source src="video/fluid_fire_demo.mp4" type="video/mp4">
-                    Your browser does not support the video tag.
-                </video>
-            </td>
-        </tr>
-    </table>
-</div>
-</p>
-
-
-
-<h2 align="middle">References</h2>
-<ul>
-  <li>Software Resources</li>
   <ul>
-    <li>WebGL (Three.js)</li>
-    <li>Spotify Web API</li>
-    <li>Music MP3s</li>
-    <li>Analyser Node (FFT)</li>
-  </ul>
-  <li>Hardware</li>
-  <ul>
-    <li>Laptops: GTX 1050 and GTX 1650 Mobile GPUs</li>
-  </ul>
-  <li>Links Update</li>
-  <ul>
-    <li><a href="http://ryansumner.github.io/FireParticles/">OpenGL Particles</a></li>
-    <li><a href="https://cs184-firesim.github.io/final-report/">Previous year's report</a></li>
-    <a href="https://github.com/simondevyoutube/ThreeJS_Tutorial_ParticleSystems">YouTube Particle System Demo</a>
-    <li><a href="https://developer.spotify.com/documentation/web-api/reference/#endpoint-get-audio-analysis">Spotify API Audio Analysis</a></li>
-    <li><a href="https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.87.2093&rep=rep1&type=pdf">2005 paper by Sanandanan Somasekaran on Particle Systems for Fire</a></li>
-    <li><a href="https://developer.nvidia.com/gpugems/gpugems3/part-v-physics-simulation/chapter-30-real-time-simulation-and-rendering-3d-fluids">Nvidia GPU Gems Navier Stokes</a></li>
+    <li><a
+        href="https://developer.nvidia.com/gpugems/gpugems3/part-v-physics-simulation/chapter-30-real-time-simulation-and-rendering-3d-fluids">Nvidia
+        GPU Gems Navier Stokes</a></li>
     <li><a href="https://www.shadertoy.com/view/ldd3WS">Navier Stokes shadertoy</a></li>
-    <li><a href="https://developer.spotify.com/documentation/general/guides/authorization-guide/">Spotify Web API Authorization Guide</a></li>
-    <li><a href="https://developer.mozilla.org/en-US/docs/Web/API/AnalyserNode">WebAudio API AnalyserNode Documentation</a></li>
   </ul>
-</ul>
-<h2 align="middle">Contributions</h2>
-<p>
-  <b>Henry</b>: I implemented the fluid-based fire simulation, and added the particle smoke to the particle-based fire. For the fire simulation, (1) I integrated the base Navier Stokes shaders into the THREE.js web framework,
-  (2) transformed the original 2D shaders into 3D shaders and added a ray-marching renderer for the 3D output, (3) Added temperature advection and reactivity advection shader passes to the renderer to make our fluid simulation
-  a fire simulation, and (4) added some parameters from the audio analysis tool that my teammates built to modulate reactivity and add random perturbations to the fire.
-  <br>
-  <b>Priyanka</b>: I implemented the user interface and music audio analysis through the integration of the JS WebAudio API, specifically using the AudioContext and AnalyserNode to compute FFT and integrating the return frequencies within the window size into our particle system. I linked the two together as well. Additionally, I integrated the Spotify Web API into the application, writing the asynchronous API calls for performing Authentication using the Client-Credentials Authentication Flow, making the Spotify Search API call for fetching the ID of the user-specified track, and using the Spotify Audio Features API for retrieving the JSON response for the track's audio features (e.g. danceability, energy). I also implemented the dance mode/immersive mode. I also helped make the particle fire more realistic through modifying the velocity, number/size of particles, and etc as well as implementing the initial RGB spline for the flame colors. I had also implemented Perlin Noise for the fragment shader in order to make the fire look more realistic, although we ended up removing it for aesthetic purposes. Finally, I did video production/editing for the project.
-  <br>
-  <b>Hannah</b>: I worked on creating the ember particle system, and optimized the efficiency of our rendering program. For the ember particle system, I incorporated changes to the program's fragment shader to accommodate our new ember textures, modified parameters such as drag forces to allow the embers to rise realistically, and finally adjusted the amplitude and velocity parameters of the system to work with the audio input variables. To improve the efficiency of our code, I made adjustments to our particle rendering algorithm to minimize heavy operations such as particle sorting and iteration.
-  <br>
-  <b>Amber</b>: I introduced the main particle system and worked on making the fire particle system more realistic. This involved manipulating drag, gravity, particle attributes like size, pressure points and more. After connecting the FFT to our fire simulation, I worked on making the fires more reactive to changes in music. I changed the frequencies each fire would respond to by focusing on lower frequencies, since those are more interesting to look at. I changed some small parameters to make the fire more realistic. I also worked on some design aspects, like changing the color or smokiness of the fire with Spotify API data. 
-</p>
 </body>
+
 </html>
