@@ -193,7 +193,7 @@ class FluidFireSystem {
 		}
 	}
 
-	update(fireIdx, isPaused, dataArray, danceConst, energyConst) {
+	update() {
 		// Updates the shaders
 		// Call this in _RAF
 		// Set render targets to outputs of dependencies
@@ -204,14 +204,8 @@ class FluidFireSystem {
 		this.jacobiUniforms["divergenceSampler"].value = this.gpuCompute.getAlternateRenderTarget(this.divergenceVariable).texture;
 		this.outputUniforms["velocitySampler"].value = this.gpuCompute.getAlternateRenderTarget(this.advectVariable).texture;
 		this.outputUniforms["pressureSampler"].value = this.gpuCompute.getAlternateRenderTarget(this.jacobiVariable).texture;
+		this.advectUniforms["velocityOffset"].value = new THREE.Vector3(Math.random() * 10 - 5, Math.random() * 10 - 5, Math.random() * 10 - 5);
 
-		if (isPaused) {
-			this.advectUniforms["velocityOffset"].value = new THREE.Vector3(Math.random() * 10 - 5, Math.random() * 10 - 5, Math.random() * 10 - 5);
-		} else {
-			var d = danceConst * 100;
-			this.advectUniforms["velocityOffset"].value = new THREE.Vector3(Math.random() * d - (d / 2), Math.random() * d - (d / 2), Math.random() * d - (d / 2));
-			this.reactionUniforms["k"].value = Math.max((1 - energyConst) * 0.1, 0.001);
-		}
 		// Do computation
 		this.gpuCompute.compute();
 
@@ -223,20 +217,8 @@ class FluidFireSystem {
 		this.boxMesh.material.uniforms.cameraPos.value.copy(this.camera.position);
 		this.altBoxMesh.material.uniforms.cameraPos.value.copy(this.camera.position);
 
-		// modulate colors based on music
-		if (isPaused) {
-			this.boxMaterial.uniforms.colorMod.value = new THREE.Vector3(1.0, 0.5, 0.25);
-			this.altBoxMaterial.uniforms.colorMod.value = new THREE.Vector3(1.0, 0.5, 0.25);
-		} else {
-			var buffer_index = Math.round(Math.exp(2.8*fireIdx/22));
-			var colorModifier = Math.max(Math.exp(0.0162 * dataArray[buffer_index])*4 + Math.random() * 5, 15);
-			var r = 1 - (Math.min(128, colorModifier) / 128);
-			var g = 1 - (Math.abs(colorModifier - 127.5) / 127.5);
-			var b = Math.max(colorModifier - 128, 0) / 128;
-
-			this.boxMaterial.uniforms.colorMod.value = new THREE.Vector3(r, g, b);
-			this.altBoxMaterial.uniforms.colorMod.value = new THREE.Vector3(r, g, b);
-		}
+		this.boxMaterial.uniforms.colorMod.value = new THREE.Vector3(1.0, 0.5, 0.25);
+		this.altBoxMaterial.uniforms.colorMod.value = new THREE.Vector3(1.0, 0.5, 0.25);
 	}
 }
 

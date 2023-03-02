@@ -3,49 +3,6 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.127/build/three.mod
 import {OrbitControls} from 'https://cdn.jsdelivr.net/npm/three@0.127/examples/jsm/controls/OrbitControls.js';
 import FluidFireSystem from './FluidFireSystem.js';
 
-var dataArray;
-var analyser;
-var audio;
-// the main visualiser function
-var vizInit = function (){
-  var file = document.getElementById("thefile");
-  audio = document.getElementById("audio");
-  var fileLabel = document.querySelector("label.file");
-
-  document.onload = function(e){
-    console.log(e);
-    audio.play();
-    play();
-  }
-
-  file.onchange = function(){
-    fileLabel.classList.add('normal');
-    audio.classList.add('active');
-    var files = this.files;
-
-    audio.src = URL.createObjectURL(files[0]);
-    audio.load();
-    audio.play();
-    play();
-    _APP._onAudioChange();
-    // add to number of fires here and start audio analysis
-  }
-
-	function play() {
-    var context = new AudioContext();
-    var src = context.createMediaElementSource(audio);
-    analyser = context.createAnalyser();
-    src.connect(analyser);
-    analyser.connect(context.destination);
-    analyser.fftSize = 256;
-    var bufferLength = analyser.frequencyBinCount;
-    dataArray = new Uint8Array(bufferLength);
-    audio.play();
-	};
-}
-
-window.onload = vizInit();
-
 class ParticleSystemDemo {
   constructor() {
     this._Initialize();
@@ -118,29 +75,6 @@ class ParticleSystemDemo {
     this._simulate();
   }
 
-  _onAudioChange() {
-    // get audio analysis
-    analyser.getByteFrequencyData(dataArray);
-
-    this.num_fires = 8;
-    var max_width = (this.num_fires-1) * 10;
-    this._camera.position.set(25, 0, 0);
-
-    while(this._scene.children.length > 0){
-        this._scene.remove(this._scene.children[0]);
-    }
-
-    this._realistic_fire_list = new Array(this.num_fires);
-    for (var i = 0; i < this.num_fires; i++) {
-        this._realistic_fire_list[i] = new FluidFireSystem({
-            scene: this._scene,
-            camera: this._camera,
-            renderer: this._threejs,
-            _z_spawn: i * 10 - max_width/2,
-        });
-    }
-  }
-
   _OnWindowResize() {
     this._camera.aspect = window.innerWidth / window.innerHeight;
     this._camera.updateProjectionMatrix();
@@ -148,11 +82,6 @@ class ParticleSystemDemo {
   }
 
   _simulate() {
-    if (!audio.paused) {
-        this._camera.position.set(5+22*2.5, 0, 0);
-    } else if (!audio.paused) {
-        this._camera.position.set(25, 0, 0);
-    }
     if (this._fire_list > 0) {
         while(this._scene.children.length > 0){
             this._scene.remove(this._scene.children[0]);
@@ -189,10 +118,7 @@ class ParticleSystemDemo {
 
   _UpdateRealisticFires(){
     for (var i = 0; i < this._realistic_fire_list.length; i++) {
-        if (!audio.paused) {
-            analyser.getByteFrequencyData(dataArray);
-        }
-        this._realistic_fire_list[i].update(this._realistic_fire_list.length - i - 1, audio.paused, dataArray, 1, 1);
+        this._realistic_fire_list[i].update();
     }
   }
 }
